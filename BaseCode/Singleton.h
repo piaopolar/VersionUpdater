@@ -5,7 +5,7 @@ template<class T>
 class Singleton
 {
 public:
-	static T &instance()
+	static T &GetInstance()
 	{
 		return boost::details::pool::singleton_default<T>::instance();
 	}

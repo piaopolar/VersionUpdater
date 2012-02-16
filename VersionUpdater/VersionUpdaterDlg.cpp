@@ -1,5 +1,8 @@
 // VersionUpdaterDlg.cpp : implementation file
 #include "stdafx.h"
+
+#include "UpdateMgr.h"
+
 #include "VersionUpdater.h"
 #include "VersionUpdaterDlg.h"
 
@@ -181,7 +184,8 @@ void CVersionUpdaterDlg::OnBnClickedBtnProcess()
 {
 	this->SaveConfig();
 
-
+	CUpdateMgr::GetInstance().SetEnvPath(m_cstrPathOld, m_cstrPathNew, m_cstrPathBefore, m_cstrPathAfter);
+	CUpdateMgr::GetInstance().Update3DMotion();
 }
 
 // ============================================================================
