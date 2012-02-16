@@ -45,6 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="..,"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -206,6 +207,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\UpdateMgr.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\VersionUpdater.cpp"
 				>
 			</File>
@@ -229,6 +234,10 @@
 			</File>
 			<File
 				RelativePath=".\targetver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UpdateMgr.h"
 				>
 			</File>
 			<File
@@ -264,5 +273,9 @@
 		</File>
 	</Files>
 	<Globals>
+		<Global
+			Name="RESOURCE_FILE"
+			Value="VersionUpdater.rc"
+		/>
 	</Globals>
 </VisualStudioProject>
