@@ -134,7 +134,7 @@ bool CUpdateMgr::Save3DMotionIni( std::string strFilePath, const::std::map<__int
 	}
 
 	for (std::map<__int64, std::string>::const_iterator itData = mapData.begin(); itData != mapData.end(); ++itData) {
-		fprintf(pFile, "%I64d=%s\n", itData->first, itData->second.c_str());
+		fprintf(pFile, "%011I64d=%s\n", itData->first, itData->second.c_str());
 	}
 
 	fclose(pFile);
