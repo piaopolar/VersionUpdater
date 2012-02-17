@@ -40,6 +40,19 @@ void CUpdateMgr::SetEnvPath(const char *pszOld,
 	FormatPath(m_strEnvAfter);
 }
 
+template<typename INDEX, typename VALUE>
+struct pair_index_finder
+{
+	pair_index_finder(INDEX index)
+	:
+	m_index(index) {
+	}
+	bool operator () (std::pair<INDEX, VALUE> p) {
+		return(m_index == p.first);
+	}
+	INDEX m_index;
+};
+
 // ============================================================================
 // ==============================================================================
 template<typename INDEX, typename VALUE>
@@ -48,61 +61,53 @@ void Update(const std::map<INDEX, VALUE> &mapOld,
 			const std::map<INDEX, VALUE> &mapBefore,
 			OUT std::map<INDEX, VALUE> &rMapAfter)
 {
-	//~~~~~~~~~~~~~~~~~~~~~~
-	std::vector<INDEX> vecChg;
-	std::vector<INDEX> vecAdd;
-	//~~~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::vector<std::pair<INDEX, VALUE> > vecChg;
+	std::vector<std::pair<INDEX, VALUE> > vecAdd;
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	for (std::map<INDEX, VALUE>::const_iterator itNew = mapNew.begin();
 		 itNew != mapNew.end(); ++itNew) {
 
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		//~~~~~~~~~~~~~~~~~~~~~
 		INDEX key = itNew->first;
+		//~~~~~~~~~~~~~~~~~~~~~
+
+		std::pair<INDEX, VALUE> pair(key, itNew->second);
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		std::map<INDEX, VALUE>::const_iterator itOld = mapOld.find(key);
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		if (itOld == mapOld.end()) {
-			vecAdd.push_back(key);
+			vecAdd.push_back(pair);
 			continue;
 		}
 
 		if (itOld->second != itNew->second) {
-			vecChg.push_back(key);
+			vecChg.push_back(pair);
 		}
 	}
 
 	rMapAfter = mapBefore;
-
 	for (std::map<INDEX, VALUE>::iterator itAfter = rMapAfter.begin();
 		 itAfter != rMapAfter.end(); ++itAfter) {
 
-		//~~~~~~~~~~~~~~~~~~~~~~~
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		INDEX key = itAfter->first;
-		//~~~~~~~~~~~~~~~~~~~~~~~
+		std::vector<std::pair<INDEX, VALUE> >::const_iterator itChg = std::
+			find_if(vecChg.begin(), vecChg.end(),
+					pair_index_finder<INDEX, VALUE> (key));
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-		if (std::find(vecChg.begin(), vecChg.end(), key) != vecChg.end()) {
-
-			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-			std::map<INDEX, VALUE>::const_iterator itNew = mapNew.find(key);
-			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-			if (itNew != mapNew.end()) {
-				itAfter->second = itNew->second;
-			}
+		if (itChg != vecChg.end()) {
+			itAfter->second = itChg->second;
 		}
 	}
 
-	for (std::vector<INDEX>::const_iterator itAdd = vecAdd.begin();
-		 itAdd != vecAdd.end(); ++itAdd) {
-
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		INDEX key = *itAdd;
-		std::map<INDEX, VALUE>::const_iterator itNew = mapNew.find(key);
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-		if (itNew != mapNew.end()) {
-			rMapAfter[key] = itNew->second;
-		}
+	for (std::vector < std::pair<INDEX, VALUE> >::const_iterator itAdd =
+			 vecAdd.begin(); itAdd != vecAdd.end(); ++itAdd) {
+		rMapAfter[itAdd->first] = itAdd->second;
 	}
 }
 
