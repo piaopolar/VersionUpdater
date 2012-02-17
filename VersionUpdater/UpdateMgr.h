@@ -30,6 +30,7 @@ public:
 private:
 	bool Load3DMotionIni(std::string strFilePath, std::map<__int64, std::string>& mapData);
 	bool Save3DMotionIni(std::string strFilePath, const::std::map<__int64, std::string>& mapData);
+	bool LoadGUIIni(std::string strFilePath, std::map<std::string, std::vector<std::string> >& maData);
 private:
 	std::string m_strEnvOld;
 	std::string m_strEnvNew;

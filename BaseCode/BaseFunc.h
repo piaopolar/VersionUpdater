@@ -3,3 +3,4 @@
 const int MAX_STRING = 1024;
 
 void FormatPath(std::string &strPath);
+void TrimRight(char *pszStr);
