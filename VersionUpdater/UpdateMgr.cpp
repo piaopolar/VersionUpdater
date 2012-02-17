@@ -133,7 +133,6 @@ bool CUpdateMgr::Load3DMotionIni(std::string strFilePath,
 	//~~~~~~~~~~~~~~~~~~~~
 
 	while (fgets(szLine, sizeof(szLine), pFile)) {
-
 		TrimRight(szLine);
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -179,28 +178,26 @@ bool CUpdateMgr::LoadGUIIni(std::string strFilePath,
 		return false;
 	}
 
+	//~~~~~~~~~~~~~~~~~~~~
 	std::string strKey;
 	std::string strComment;
-
-	//~~~~~~~~~~~~~~~~~~~~
 	char szLine[MAX_STRING];
 	//~~~~~~~~~~~~~~~~~~~~
 
 	while (fgets(szLine, sizeof(szLine), pFile)) {
 		TrimRight(szLine);
 
+		//~~~~~~~
 		char *pPos;
+		//~~~~~~~
+
 		// comment
 		pPos = strstr(szLine, "//");
-
-
-
 	}
 
 	fclose(pFile);
 	return true;
 }
-
 
 // ============================================================================
 // ==============================================================================
@@ -217,7 +214,7 @@ bool CUpdateMgr::Save3DMotionIni(std::string strFilePath,
 
 	for (std::map < __int64, std::string >::const_iterator itData = mapData.
 			 begin(); itData != mapData.end(); ++itData) {
-		fprintf(pFile, "%I64d=%s\n", itData->first, itData->second.c_str());
+		fprintf(pFile, "%011I64d=%s\n", itData->first, itData->second.c_str());
 	}
 
 	fclose(pFile);
