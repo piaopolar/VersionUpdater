@@ -140,6 +140,24 @@ bool CUpdateMgr::Update3DMotion(void)
 // ==============================================================================
 bool CUpdateMgr::UpdateGUI(void)
 {
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::map<std::string, std::vector<std::string> > mapOld;
+	std::map<std::string, std::vector<std::string> > mapNew;
+	std::map<std::string, std::vector<std::string> > mapBefore;
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	this->LoadGUIIni(m_strEnvOld + INI_GUI, mapOld);
+	this->LoadGUIIni(m_strEnvNew + INI_GUI, mapNew);
+	this->LoadGUIIni(m_strEnvBefore + INI_GUI, mapBefore);
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::map<std::string, std::vector<std::string>> mapAfter;
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	Update(mapOld, mapNew, mapBefore, mapAfter);
+
+	this->SaveGUIIni(m_strEnvAfter + INI_GUI, mapAfter);
+	
 	return true;
 }
 
@@ -273,6 +291,31 @@ bool CUpdateMgr::Save3DMotionIni(std::string strFilePath,
 	for (std::map < __int64, std::string >::const_iterator itData = mapData.
 			 begin(); itData != mapData.end(); ++itData) {
 		fprintf(pFile, "%011I64d=%s\n", itData->first, itData->second.c_str());
+	}
+
+	fclose(pFile);
+	return true;
+}
+
+bool CUpdateMgr::SaveGUIIni( std::string strFilePath, const std::map<std::string, std::vector<std::string> > & mapData )
+{
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	FILE *pFile = fopen(strFilePath.c_str(), "w");
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	if (NULL == pFile) {
+		return false;
+	}
+
+	std::map<std::string, std::vector<std::string> >::const_iterator itSection = mapData.begin();
+	for (; itSection != mapData.end(); ++itSection) {
+		fprintf(pFile, "[%s]\n", itSection->first.c_str());
+		const std::vector<std::string>& rVecValue = itSection->second;
+		std::vector<std::string>::const_iterator itValue = rVecValue.begin();
+		for (; itValue != rVecValue.end(); ++itValue) {
+			fprintf(pFile, "%s\n", itValue->c_str());
+		}
+		fprintf(pFile, "\n");
 	}
 
 	fclose(pFile);

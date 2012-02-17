@@ -186,6 +186,7 @@ void CVersionUpdaterDlg::OnBnClickedBtnProcess()
 
 	CUpdateMgr::GetInstance().SetEnvPath(m_cstrPathOld, m_cstrPathNew, m_cstrPathBefore, m_cstrPathAfter);
 	CUpdateMgr::GetInstance().Update3DMotion();
+	CUpdateMgr::GetInstance().UpdateGUI();
 }
 
 // ============================================================================
