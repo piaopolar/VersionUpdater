@@ -9,6 +9,7 @@ namespace
 {
 const char *INI_3DMOTION = "3dmotion.ini";
 const char *INI_GUI = "gui.ini";
+std::string COMMENT_PREFIX = "comment=";
 }
 
 // ============================================================================
@@ -225,7 +226,6 @@ bool CUpdateMgr::LoadGUIIni(std::string strFilePath,
 	}
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	const std::string COMMENT_PREFIX = "comment=";
 	char szLine[MAX_STRING];
 	char szTmp[MAX_STRING];
 	std::string strKey;
@@ -309,9 +309,18 @@ bool CUpdateMgr::SaveGUIIni( std::string strFilePath, const std::map<std::string
 
 	std::map<std::string, std::vector<std::string> >::const_iterator itSection = mapData.begin();
 	for (; itSection != mapData.end(); ++itSection) {
-		fprintf(pFile, "[%s]\n", itSection->first.c_str());
 		const std::vector<std::string>& rVecValue = itSection->second;
 		std::vector<std::string>::const_iterator itValue = rVecValue.begin();
+		if (itValue != rVecValue.end()) {
+			std::string strFirst = *itValue;
+			std::string::size_type posStr = strFirst.find(COMMENT_PREFIX);
+			if (posStr != std::string::npos) {
+				fprintf(pFile, "%s\n", strFirst.substr(posStr + COMMENT_PREFIX.length()).c_str());
+				++itValue;
+			}
+		}
+
+		fprintf(pFile, "[%s]\n", itSection->first.c_str());
 		for (; itValue != rVecValue.end(); ++itValue) {
 			fprintf(pFile, "%s\n", itValue->c_str());
 		}
