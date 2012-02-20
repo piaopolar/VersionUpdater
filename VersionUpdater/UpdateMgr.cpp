@@ -67,33 +67,60 @@ void Update(const std::map<INDEX, VALUE> &mapOld,
 	std::vector<std::pair<INDEX, VALUE> > vecAdd;
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
+	std::map<INDEX, VALUE>::const_iterator itNew = mapNew.begin();
+	std::map<INDEX, VALUE>::const_iterator itOld = mapOld.begin();
+
 	int nCount = 0;
+	while (itNew != mapNew.end() && itOld != mapOld.end()) {
 
-	for (std::map<INDEX, VALUE>::const_iterator itNew = mapNew.begin();
-		 itNew != mapNew.end(); ++itNew) {
+		std::pair<INDEX, VALUE> pair(itNew->first, itNew->second);
 
-		 ++nCount;
-		 if (nCount % 10000 == 0) {
-			 LogInfoIn("ana %d/%d", nCount, mapNew.size());
-		 }
+		if (itNew->first == itOld->first) {
+			if (itOld->second != itNew->second) {
+				vecChg.push_back(pair);
+			}
 
-		//~~~~~~~~~~~~~~~~~~~~~
-		INDEX key = itNew->first;
-		//~~~~~~~~~~~~~~~~~~~~~
+			++nCount;
+			++itNew;
+			if (nCount % 10000 == 0) {
+				LogInfoIn("ana %d/%d", nCount, mapNew.size());
+			}
 
-		std::pair<INDEX, VALUE> pair(key, itNew->second);
 
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		std::map<INDEX, VALUE>::const_iterator itOld = mapOld.find(key);
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			if (itOld != mapOld.end()) {
+				++itOld;
+			}
 
-		if (itOld == mapOld.end()) {
-			vecAdd.push_back(pair);
 			continue;
 		}
 
-		if (itOld->second != itNew->second) {
-			vecChg.push_back(pair);
+		if (itNew->first < itOld->first) {
+			vecAdd.push_back(pair);
+
+			++nCount;
+			++itNew;
+			if (nCount % 10000 == 0) {
+				LogInfoIn("ana %d/%d", nCount, mapNew.size());
+			}
+
+			continue;
+		}
+
+		if (itNew->first > itOld->first) {
+			++itOld;
+		}
+	}
+
+	while (itNew != mapNew.end()) {
+
+		std::pair<INDEX, VALUE> pair(itNew->first, itNew->second);
+		vecAdd.push_back(pair);
+
+		++nCount;
+		++itNew;
+		if (nCount % 10000 == 0) {
+			LogInfoIn("ana %d/%d", nCount, mapNew.size());
 		}
 	}
 
