@@ -67,8 +67,15 @@ void Update(const std::map<INDEX, VALUE> &mapOld,
 	std::vector<std::pair<INDEX, VALUE> > vecAdd;
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+	int nCount = 0;
+
 	for (std::map<INDEX, VALUE>::const_iterator itNew = mapNew.begin();
 		 itNew != mapNew.end(); ++itNew) {
+
+		 ++nCount;
+		 if (nCount % 10000 == 0) {
+			 LogInfoIn("ana %d/%d", nCount, mapNew.size());
+		 }
 
 		//~~~~~~~~~~~~~~~~~~~~~
 		INDEX key = itNew->first;
@@ -90,9 +97,19 @@ void Update(const std::map<INDEX, VALUE> &mapOld,
 		}
 	}
 
+	LogInfoIn("ana ok add num %d chg num %d", vecAdd.size(), vecChg.size());
+
 	rMapAfter = mapBefore;
+
+	nCount = 0;
+
 	for (std::map<INDEX, VALUE>::iterator itAfter = rMapAfter.begin();
 		 itAfter != rMapAfter.end(); ++itAfter) {
+
+		 ++nCount;
+		 if (nCount % 10000 == 0) {
+			 LogInfoIn("replace %d/%d", nCount, mapNew.size());
+		 }
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		INDEX key = itAfter->first;
@@ -106,10 +123,14 @@ void Update(const std::map<INDEX, VALUE> &mapOld,
 		}
 	}
 
+	LogInfoIn("replace ok", nCount, mapNew.size());
+
 	for (std::vector < std::pair<INDEX, VALUE> >::const_iterator itAdd =
 			 vecAdd.begin(); itAdd != vecAdd.end(); ++itAdd) {
 		rMapAfter[itAdd->first] = itAdd->second;
 	}
+
+	LogInfoIn("add ok", nCount, mapNew.size());
 }
 
 // ============================================================================
@@ -167,6 +188,8 @@ bool CUpdateMgr::UpdateGUI(void)
 bool CUpdateMgr::Load3DMotionIni(std::string strFilePath,
 								 std::map<__int64, std::string> &mapData)
 {
+	LogInfoIn("open %s", strFilePath.c_str());
+
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	FILE *pFile = fopen(strFilePath.c_str(), "r");
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -174,6 +197,8 @@ bool CUpdateMgr::Load3DMotionIni(std::string strFilePath,
 	if (NULL == pFile) {
 		return false;
 	}
+
+	LogInfoIn("open %s ok", strFilePath.c_str());
 
 	//~~~~~~~~~~~~~~~~~~~~
 	char szLine[MAX_STRING];
@@ -217,6 +242,8 @@ bool CUpdateMgr::Load3DMotionIni(std::string strFilePath,
 bool CUpdateMgr::LoadGUIIni(std::string strFilePath,
 							std::map<std::string, std::vector<std::string> > &mapData)
 {
+	LogInfoIn("open %s", strFilePath.c_str());
+
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	FILE *pFile = fopen(strFilePath.c_str(), "r");
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -224,6 +251,8 @@ bool CUpdateMgr::LoadGUIIni(std::string strFilePath,
 	if (NULL == pFile) {
 		return false;
 	}
+
+	LogInfoIn("open %s ok", strFilePath.c_str());
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	char szLine[MAX_STRING];
@@ -280,6 +309,8 @@ bool CUpdateMgr::LoadGUIIni(std::string strFilePath,
 bool CUpdateMgr::Save3DMotionIni(std::string strFilePath,
 								 const::std::map<__int64, std::string> &mapData)
 {
+	LogInfoIn("open %s", strFilePath.c_str());
+
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	FILE *pFile = fopen(strFilePath.c_str(), "w");
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -287,6 +318,8 @@ bool CUpdateMgr::Save3DMotionIni(std::string strFilePath,
 	if (NULL == pFile) {
 		return false;
 	}
+
+	LogInfoIn("open %s ok", strFilePath.c_str());
 
 	for (std::map < __int64, std::string >::const_iterator itData = mapData.
 			 begin(); itData != mapData.end(); ++itData) {

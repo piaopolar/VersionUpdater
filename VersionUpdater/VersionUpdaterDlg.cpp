@@ -1,6 +1,7 @@
 // VersionUpdaterDlg.cpp : implementation file
 #include "stdafx.h"
 
+#include "BaseCode/BaseFunc.h"
 #include "UpdateMgr.h"
 
 #include "VersionUpdater.h"
@@ -64,6 +65,7 @@ void CVersionUpdaterDlg::DoDataExchange(CDataExchange *pDX)
 	DDX_Text(pDX, IDC_EDIT_NEW, m_cstrPathNew);
 	DDX_Text(pDX, IDC_EDIT_BEFORE, m_cstrPathBefore);
 	DDX_Text(pDX, IDC_EDIT_AFTER, m_cstrPathAfter);
+	DDX_Control(pDX, IDC_EDIT_LOG, m_edtLog);
 }
 
 BEGIN_MESSAGE_MAP(CVersionUpdaterDlg, CDialog)
@@ -110,6 +112,8 @@ BOOL CVersionUpdaterDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);	// Set small icon
 
 	LoadConfig();
+
+	SetLogEdit(&m_edtLog);
 
 	// TODO: Add extra initialization here
 	return TRUE;				// return TRUE unless you set the focus to a
@@ -193,10 +197,6 @@ void CVersionUpdaterDlg::OnBnClickedBtnProcess()
 // ==============================================================================
 void CVersionUpdaterDlg::LoadConfig(void)
 {
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	const char *CONFIG_INI = "config.ini";
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 	GetPrivateProfileString("Path", "Old", "",
 							m_cstrPathOld.GetBuffer(MAX_PATH), MAX_PATH,
 							CONFIG_INI);
@@ -217,10 +217,6 @@ void CVersionUpdaterDlg::LoadConfig(void)
 void CVersionUpdaterDlg::SaveConfig(void)
 {
 	this->UpdateData(TRUE);
-
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	const char *CONFIG_INI = "config.ini";
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	WritePrivateProfileString("Path", "Old", m_cstrPathOld, CONFIG_INI);
 	WritePrivateProfileString("Path", "New", m_cstrPathNew, CONFIG_INI);

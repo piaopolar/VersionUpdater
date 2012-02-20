@@ -1,6 +1,7 @@
 // VersionUpdaterDlg.h : header file
 #pragma once
 #include <string>
+#include "afxwin.h"
 
 // ============================================================================
 //    CVersionUpdaterDlg dialog
@@ -40,4 +41,5 @@ public:
 	CString m_cstrPathNew;
 	CString m_cstrPathBefore;
 	CString m_cstrPathAfter;
+	CEdit m_edtLog;
 };
