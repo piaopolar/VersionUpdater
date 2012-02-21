@@ -41,68 +41,54 @@ void CUpdateMgr::SetEnvPath(const char *pszOld,
 	FormatPath(m_strEnvAfter);
 }
 
-template<typename INDEX, typename VALUE>
-struct pair_index_finder
-{
-	pair_index_finder(INDEX index)
-	:
-	m_index(index) {
-	}
-	bool operator () (std::pair<INDEX, VALUE> p) {
-		return(m_index == p.first);
-	}
-	INDEX m_index;
-};
-
 // ============================================================================
 // ==============================================================================
-template<typename INDEX, typename VALUE>
-void Update(const std::map<INDEX, VALUE> &mapOld,
-			const std::map<INDEX, VALUE> &mapNew,
-			const std::map<INDEX, VALUE> &mapBefore,
-			OUT std::map<INDEX, VALUE> &rMapAfter)
+template<typename INDEX, typename DATA>
+void Update(const std::map<INDEX, DATA> &mapOld,
+			const std::map<INDEX, DATA> &mapNew,
+			const std::map<INDEX, DATA> &mapBefore,
+			OUT std::map<INDEX, DATA> &rMapAfter)
 {
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	std::vector<std::pair<INDEX, VALUE> > vecChg;
-	std::vector<std::pair<INDEX, VALUE> > vecAdd;
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::map<INDEX, DATA> mapChg;
+	std::map<INDEX, DATA> mapAdd;
 
-
-	std::map<INDEX, VALUE>::const_iterator itNew = mapNew.begin();
-	std::map<INDEX, VALUE>::const_iterator itOld = mapOld.begin();
+	std::map<INDEX, DATA>::const_iterator itNew = mapNew.begin();
+	std::map<INDEX, DATA>::const_iterator itOld = mapOld.begin();
 
 	int nCount = 0;
+	int nMulti = 0;
+	int nCheckPoint = 10000;
 	while (itNew != mapNew.end() && itOld != mapOld.end()) {
 
-		std::pair<INDEX, VALUE> pair(itNew->first, itNew->second);
+		if (nCount >= nCheckPoint) {
+			++nMulti;
+			nCount = 0;
+			LogInfoIn("ana %d  vecChg %d vecAdd %d  sum %d", nMulti * nCheckPoint, mapChg.size(), mapAdd.size(), mapChg.size() + mapAdd.size());
+		}
 
 		if (itNew->first == itOld->first) {
 			if (itOld->second != itNew->second) {
-				vecChg.push_back(pair);
+				mapChg[itNew->first] = itNew->second;
 			}
 
 			++nCount;
 			++itNew;
-			if (nCount % 10000 == 0) {
-				LogInfoIn("ana %d/%d", nCount, mapNew.size());
-			}
-
-
-			if (itOld != mapOld.end()) {
-				++itOld;
-			}
+			++itOld;
+// 			if (nCount % 10000 == 0) {
+// 				LogInfoIn("ana %d/%d", nCount, mapNew.size());
+// 			}
 
 			continue;
 		}
 
 		if (itNew->first < itOld->first) {
-			vecAdd.push_back(pair);
 
+			mapAdd[itNew->first] = itNew->second;
 			++nCount;
 			++itNew;
-			if (nCount % 10000 == 0) {
-				LogInfoIn("ana %d/%d", nCount, mapNew.size());
-			}
+// 			if (nCount % 10000 == 0) {
+// 				LogInfoIn("ana %d/%d", nCount, mapNew.size());
+// 			}
 
 			continue;
 		}
@@ -114,23 +100,22 @@ void Update(const std::map<INDEX, VALUE> &mapOld,
 
 	while (itNew != mapNew.end()) {
 
-		std::pair<INDEX, VALUE> pair(itNew->first, itNew->second);
-		vecAdd.push_back(pair);
+		mapAdd[itNew->first] = itNew->second;
 
 		++nCount;
 		++itNew;
-		if (nCount % 10000 == 0) {
-			LogInfoIn("ana %d/%d", nCount, mapNew.size());
-		}
+// 		if (nCount % 10000 == 0) {
+// 			LogInfoIn("ana %d/%d", nCount, mapNew.size());
+// 		}
 	}
 
-	LogInfoIn("ana ok add num %d chg num %d", vecAdd.size(), vecChg.size());
+	LogInfoIn("ana ok add num %d chg num %d", mapAdd.size(), mapChg.size());
 
 	rMapAfter = mapBefore;
 
 	nCount = 0;
 
-	for (std::map<INDEX, VALUE>::iterator itAfter = rMapAfter.begin();
+	for (std::map<INDEX, DATA>::iterator itAfter = rMapAfter.begin();
 		 itAfter != rMapAfter.end(); ++itAfter) {
 
 		 ++nCount;
@@ -140,20 +125,17 @@ void Update(const std::map<INDEX, VALUE> &mapOld,
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		INDEX key = itAfter->first;
-		std::vector<std::pair<INDEX, VALUE> >::const_iterator itChg = std::
-			find_if(vecChg.begin(), vecChg.end(),
-					pair_index_finder<INDEX, VALUE> (key));
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		std::map<INDEX, DATA>::const_iterator itChg = mapChg.find(key);
 
-		if (itChg != vecChg.end()) {
+		if (itChg != mapChg.end()) {
 			itAfter->second = itChg->second;
 		}
 	}
 
 	LogInfoIn("replace ok", nCount, mapNew.size());
 
-	for (std::vector < std::pair<INDEX, VALUE> >::const_iterator itAdd =
-			 vecAdd.begin(); itAdd != vecAdd.end(); ++itAdd) {
+	for (std::map<INDEX, DATA>::const_iterator itAdd =
+			 mapAdd.begin(); itAdd != mapAdd.end(); ++itAdd) {
 		rMapAfter[itAdd->first] = itAdd->second;
 	}
 
@@ -350,7 +332,11 @@ bool CUpdateMgr::Save3DMotionIni(std::string strFilePath,
 
 	for (std::map < __int64, std::string >::const_iterator itData = mapData.
 			 begin(); itData != mapData.end(); ++itData) {
-		fprintf(pFile, "%011I64d=%s\n", itData->first, itData->second.c_str());
+		 if (itData->first >= 1000000000000) {
+			 fprintf(pFile, "%014I64d=%s\n", itData->first, itData->second.c_str());
+		 } else {
+			 fprintf(pFile, "%011I64d=%s\n", itData->first, itData->second.c_str());
+		 }
 	}
 
 	fclose(pFile);
