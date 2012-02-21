@@ -54,6 +54,8 @@ END_MESSAGE_MAP()
 CVersionUpdaterDlg::CVersionUpdaterDlg(CWnd *pParent /* NULL */ ) : CDialog(CVersionUpdaterDlg::IDD, pParent), m_cstrPathOld(_T("")), m_cstrPathNew(_T("")), m_cstrPathBefore(_T("")), m_cstrPathAfter(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_bDealGUI = false;
+	m_bDeal3DMotion = false;
 }
 
 // ============================================================================
@@ -75,6 +77,8 @@ BEGIN_MESSAGE_MAP(CVersionUpdaterDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED
 (IDC_BTN_PROCESS, &CVersionUpdaterDlg::OnBnClickedBtnProcess)
+	ON_BN_CLICKED(IDC_CHK_3DMOTION, &CVersionUpdaterDlg::OnBnClickedChk3dmotion)
+	ON_BN_CLICKED(IDC_CHK_GUI, &CVersionUpdaterDlg::OnBnClickedChkGui)
 END_MESSAGE_MAP()
 
 // ============================================================================
@@ -188,9 +192,18 @@ void CVersionUpdaterDlg::OnBnClickedBtnProcess()
 {
 	this->SaveConfig();
 
-	CUpdateMgr::GetInstance().SetEnvPath(m_cstrPathOld, m_cstrPathNew, m_cstrPathBefore, m_cstrPathAfter);
-	CUpdateMgr::GetInstance().Update3DMotion();
-	CUpdateMgr::GetInstance().UpdateGUI();
+	CUpdateMgr::GetInstance().SetEnvPath(m_cstrPathOld, m_cstrPathNew,
+										 m_cstrPathBefore, m_cstrPathAfter);
+
+	if (m_bDealGUI) {
+		CUpdateMgr::GetInstance().UpdateGUI();
+	}
+
+	if (m_bDeal3DMotion) {
+		CUpdateMgr::GetInstance().Update3DMotion();
+	}
+
+	LogInfoIn("Process Finish");
 }
 
 // ============================================================================
@@ -222,4 +235,18 @@ void CVersionUpdaterDlg::SaveConfig(void)
 	WritePrivateProfileString("Path", "New", m_cstrPathNew, CONFIG_INI);
 	WritePrivateProfileString("Path", "Before", m_cstrPathBefore, CONFIG_INI);
 	WritePrivateProfileString("Path", "After", m_cstrPathAfter, CONFIG_INI);
+}
+
+// ============================================================================
+// ==============================================================================
+void CVersionUpdaterDlg::OnBnClickedChk3dmotion()
+{
+	m_bDeal3DMotion = !m_bDeal3DMotion;
+}
+
+// ============================================================================
+// ==============================================================================
+void CVersionUpdaterDlg::OnBnClickedChkGui()
+{
+	m_bDealGUI = !m_bDealGUI;
 }

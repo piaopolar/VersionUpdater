@@ -9,6 +9,7 @@ namespace
 {
 const char *INI_3DMOTION = "3dmotion.ini";
 const char *INI_GUI = "gui.ini";
+const char *INI_GUI800 = "gui800X600.ini";
 std::string COMMENT_PREFIX = "comment=";
 }
 
@@ -47,48 +48,37 @@ template<typename INDEX, typename DATA>
 void Update(const std::map<INDEX, DATA> &mapOld,
 			const std::map<INDEX, DATA> &mapNew,
 			const std::map<INDEX, DATA> &mapBefore,
-			OUT std::map<INDEX, DATA> &rMapAfter)
+			OUT std::map<INDEX, DATA> &rMapAfter,
+			OUT std::map<INDEX, DATA> &rMapAllChg)
 {
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	std::map<INDEX, DATA> mapChg;
 	std::map<INDEX, DATA> mapAdd;
-
 	std::map<INDEX, DATA>::const_iterator itNew = mapNew.begin();
 	std::map<INDEX, DATA>::const_iterator itOld = mapOld.begin();
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	int nCount = 0;
-	int nMulti = 0;
-	int nCheckPoint = 10000;
 	while (itNew != mapNew.end() && itOld != mapOld.end()) {
-
-		if (nCount >= nCheckPoint) {
-			++nMulti;
-			nCount = 0;
-			LogInfoIn("ana %d  vecChg %d vecAdd %d  sum %d", nMulti * nCheckPoint, mapChg.size(), mapAdd.size(), mapChg.size() + mapAdd.size());
-		}
-
 		if (itNew->first == itOld->first) {
 			if (itOld->second != itNew->second) {
-				mapChg[itNew->first] = itNew->second;
+				mapChg.insert(std::map<INDEX, DATA>::value_type(itNew->first,
+							  itNew->second));
+				rMapAllChg.insert(std::map<INDEX, DATA>::value_type(
+									  itNew->first, itNew->second));
 			}
 
-			++nCount;
 			++itNew;
 			++itOld;
-// 			if (nCount % 10000 == 0) {
-// 				LogInfoIn("ana %d/%d", nCount, mapNew.size());
-// 			}
 
 			continue;
 		}
 
 		if (itNew->first < itOld->first) {
-
-			mapAdd[itNew->first] = itNew->second;
-			++nCount;
+			mapAdd.insert(std::map<INDEX, DATA>::value_type(itNew->first,
+						  itNew->second));
+			rMapAllChg.insert(std::map<INDEX, DATA>::value_type(itNew->first,
+							  itNew->second));
 			++itNew;
-// 			if (nCount % 10000 == 0) {
-// 				LogInfoIn("ana %d/%d", nCount, mapNew.size());
-// 			}
 
 			continue;
 		}
@@ -99,70 +89,129 @@ void Update(const std::map<INDEX, DATA> &mapOld,
 	}
 
 	while (itNew != mapNew.end()) {
-
-		mapAdd[itNew->first] = itNew->second;
-
-		++nCount;
+		mapAdd.insert(std::map<INDEX, DATA>::value_type(itNew->first, itNew->second));
+		rMapAllChg.insert(std::map<INDEX, DATA>::value_type(itNew->first, itNew->second));
 		++itNew;
-// 		if (nCount % 10000 == 0) {
-// 			LogInfoIn("ana %d/%d", nCount, mapNew.size());
-// 		}
 	}
 
-	LogInfoIn("ana ok add num %d chg num %d", mapAdd.size(), mapChg.size());
+	LogInfoIn("ana ok add %d chg %d", mapAdd.size(), mapChg.size());
 
 	rMapAfter = mapBefore;
-
-	nCount = 0;
 
 	for (std::map<INDEX, DATA>::iterator itAfter = rMapAfter.begin();
 		 itAfter != rMapAfter.end(); ++itAfter) {
 
-		 ++nCount;
-		 if (nCount % 10000 == 0) {
-			 LogInfoIn("replace %d/%d", nCount, mapNew.size());
-		 }
-
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		INDEX key = itAfter->first;
 		std::map<INDEX, DATA>::const_iterator itChg = mapChg.find(key);
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		if (itChg != mapChg.end()) {
 			itAfter->second = itChg->second;
 		}
 	}
 
-	LogInfoIn("replace ok", nCount, mapNew.size());
+	LogInfoIn("replace ok");
 
-	for (std::map<INDEX, DATA>::const_iterator itAdd =
-			 mapAdd.begin(); itAdd != mapAdd.end(); ++itAdd) {
+	for (std::map<INDEX, DATA>::const_iterator itAdd = mapAdd.begin();
+		 itAdd != mapAdd.end(); ++itAdd) {
 		rMapAfter[itAdd->first] = itAdd->second;
 	}
 
-	LogInfoIn("add ok", nCount, mapNew.size());
+	LogInfoIn("add ok");
 }
 
 // ============================================================================
 // ==============================================================================
-bool CUpdateMgr::Update3DMotion(void)
+bool CUpdateMgr::Update3DMotionLike(const char *pszFile)
 {
+	if (NULL == pszFile) {
+		return false;
+	}
+
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	std::map<__int64, std::string> mapOld;
 	std::map<__int64, std::string> mapNew;
 	std::map<__int64, std::string> mapBefore;
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	this->Load3DMotionIni(m_strEnvOld + INI_3DMOTION, mapOld);
-	this->Load3DMotionIni(m_strEnvNew + INI_3DMOTION, mapNew);
-	this->Load3DMotionIni(m_strEnvBefore + INI_3DMOTION, mapBefore);
+	if (!this->Load3DMotionIni(m_strEnvOld + pszFile, mapOld)) {
+		return false;
+	}
 
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	if (!this->Load3DMotionIni(m_strEnvNew + pszFile, mapNew)) {
+		return false;
+	}
+
+	if (!this->Load3DMotionIni(m_strEnvBefore + pszFile, mapBefore)) {
+		return false;
+	}
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	std::map<__int64, std::string> mapAfter;
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::map<__int64, std::string> mapAllChg;
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	Update(mapOld, mapNew, mapBefore, mapAfter);
+	Update(mapOld, mapNew, mapBefore, mapAfter, mapAllChg);
 
-	this->Save3DMotionIni(m_strEnvAfter + INI_3DMOTION, mapAfter);
+	if (!this->Save3DMotionIni(m_strEnvAfter + pszFile, mapAfter)) {
+		return false;
+	}
+
+	if (!this->Save3DMotionIni(m_strEnvAfter + "+" + pszFile, mapAllChg)) {
+		return false;
+	}
+
+	return true;
+}
+
+// ============================================================================
+// ==============================================================================
+bool CUpdateMgr::Update3DMotion(void)
+{
+	return this->Update3DMotionLike(INI_3DMOTION);
+}
+
+// ============================================================================
+// ==============================================================================
+bool CUpdateMgr::UpdateGUILike(const char *pszFile)
+{
+	if (NULL == pszFile) {
+		return false;
+	}
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::map<std::string, std::vector<std::string> > mapOld;
+	std::map<std::string, std::vector<std::string> > mapNew;
+	std::map<std::string, std::vector<std::string> > mapBefore;
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	if (!this->LoadGUIIni(m_strEnvOld + pszFile, mapOld)) {
+		return false;
+	}
+
+	if (!this->LoadGUIIni(m_strEnvNew + pszFile, mapNew)) {
+		return false;
+	}
+
+	if (!this->LoadGUIIni(m_strEnvBefore + pszFile, mapBefore)) {
+		return false;
+	}
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::map<std::string, std::vector<std::string> > mapAfter;
+	std::map<std::string, std::vector<std::string> > mapAllChg;
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	Update(mapOld, mapNew, mapBefore, mapAfter, mapAllChg);
+
+	if (!this->SaveGUIIni(m_strEnvAfter + pszFile, mapAfter)) {
+		return false;
+	}
+
+	if (!this->SaveGUIIni(m_strEnvAfter + "+" + pszFile, mapAllChg)) {
+		return false;
+	}
 
 	return true;
 }
@@ -171,25 +220,13 @@ bool CUpdateMgr::Update3DMotion(void)
 // ==============================================================================
 bool CUpdateMgr::UpdateGUI(void)
 {
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	std::map<std::string, std::vector<std::string> > mapOld;
-	std::map<std::string, std::vector<std::string> > mapNew;
-	std::map<std::string, std::vector<std::string> > mapBefore;
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~
+	bool bRet = true;
+	//~~~~~~~~~~~~~
 
-	this->LoadGUIIni(m_strEnvOld + INI_GUI, mapOld);
-	this->LoadGUIIni(m_strEnvNew + INI_GUI, mapNew);
-	this->LoadGUIIni(m_strEnvBefore + INI_GUI, mapBefore);
-
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	std::map<std::string, std::vector<std::string>> mapAfter;
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-	Update(mapOld, mapNew, mapBefore, mapAfter);
-
-	this->SaveGUIIni(m_strEnvAfter + INI_GUI, mapAfter);
-	
-	return true;
+	bRet = bRet && this->UpdateGUILike(INI_GUI);
+	bRet = bRet && this->UpdateGUILike(INI_GUI800);
+	return bRet;
 }
 
 // ============================================================================
@@ -197,17 +234,14 @@ bool CUpdateMgr::UpdateGUI(void)
 bool CUpdateMgr::Load3DMotionIni(std::string strFilePath,
 								 std::map<__int64, std::string> &mapData)
 {
-	LogInfoIn("open %s", strFilePath.c_str());
-
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	FILE *pFile = fopen(strFilePath.c_str(), "r");
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	if (NULL == pFile) {
+		LogInfoIn("!!!!! open %s error", strFilePath.c_str());
 		return false;
 	}
-
-	LogInfoIn("open %s ok", strFilePath.c_str());
 
 	//~~~~~~~~~~~~~~~~~~~~
 	char szLine[MAX_STRING];
@@ -243,6 +277,8 @@ bool CUpdateMgr::Load3DMotionIni(std::string strFilePath,
 	}
 
 	fclose(pFile);
+
+	LogInfoIn("load %s ok", strFilePath.c_str());
 	return true;
 }
 
@@ -251,25 +287,22 @@ bool CUpdateMgr::Load3DMotionIni(std::string strFilePath,
 bool CUpdateMgr::LoadGUIIni(std::string strFilePath,
 							std::map<std::string, std::vector<std::string> > &mapData)
 {
-	LogInfoIn("open %s", strFilePath.c_str());
-
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	FILE *pFile = fopen(strFilePath.c_str(), "r");
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	if (NULL == pFile) {
+		LogInfoIn("!!!!! open %s error", strFilePath.c_str());
 		return false;
 	}
 
-	LogInfoIn("open %s ok", strFilePath.c_str());
-
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	char szLine[MAX_STRING];
 	char szTmp[MAX_STRING];
 	std::string strKey;
 	std::string strComment;
 	std::vector<std::string> vecSection;
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	while (fgets(szLine, sizeof(szLine), pFile)) {
 		TrimRight(szLine);
@@ -310,58 +343,77 @@ bool CUpdateMgr::LoadGUIIni(std::string strFilePath,
 	mapData[strKey] = vecSection;
 
 	fclose(pFile);
+
+	LogInfoIn("open %s ok", strFilePath.c_str());
 	return true;
 }
 
 // ============================================================================
 // ==============================================================================
 bool CUpdateMgr::Save3DMotionIni(std::string strFilePath,
-								 const::std::map<__int64, std::string> &mapData)
+								 const std::map<__int64, std::string> &mapData)
 {
-	LogInfoIn("open %s", strFilePath.c_str());
-
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	FILE *pFile = fopen(strFilePath.c_str(), "w");
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	if (NULL == pFile) {
+		LogInfoIn("!!!!! create %s error", strFilePath.c_str());
 		return false;
 	}
-
-	LogInfoIn("open %s ok", strFilePath.c_str());
 
 	for (std::map < __int64, std::string >::const_iterator itData = mapData.
 			 begin(); itData != mapData.end(); ++itData) {
-		 if (itData->first >= 1000000000000) {
-			 fprintf(pFile, "%014I64d=%s\n", itData->first, itData->second.c_str());
-		 } else {
-			 fprintf(pFile, "%011I64d=%s\n", itData->first, itData->second.c_str());
-		 }
+		if (itData->first >= 1000000000000) {
+			fprintf(pFile, "%014I64d=%s\n", itData->first,
+					itData->second.c_str());
+		} else {
+			fprintf(pFile, "%011I64d=%s\n", itData->first,
+					itData->second.c_str());
+		}
 	}
 
 	fclose(pFile);
+	LogInfoIn("***** save %s ok", strFilePath.c_str());
 	return true;
 }
 
-bool CUpdateMgr::SaveGUIIni( std::string strFilePath, const std::map<std::string, std::vector<std::string> > & mapData )
+// ============================================================================
+// ==============================================================================
+bool CUpdateMgr::SaveGUIIni(std::string strFilePath,
+							const std::map<std::string, std::vector<std::string> > &mapData)
 {
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	FILE *pFile = fopen(strFilePath.c_str(), "w");
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	if (NULL == pFile) {
+		LogInfoIn("!!!!! create %s error", strFilePath.c_str());
 		return false;
 	}
 
-	std::map<std::string, std::vector<std::string> >::const_iterator itSection = mapData.begin();
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::map<std::string, std::vector<std::string> >::const_iterator itSection =
+		mapData.begin();
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 	for (; itSection != mapData.end(); ++itSection) {
-		const std::vector<std::string>& rVecValue = itSection->second;
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		const std::vector<std::string> &rVecValue = itSection->second;
 		std::vector<std::string>::const_iterator itValue = rVecValue.begin();
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 		if (itValue != rVecValue.end()) {
+
+			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			std::string strFirst = *itValue;
+			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 			std::string::size_type posStr = strFirst.find(COMMENT_PREFIX);
 			if (posStr != std::string::npos) {
-				fprintf(pFile, "%s\n", strFirst.substr(posStr + COMMENT_PREFIX.length()).c_str());
+				fprintf(pFile, "%s\n",
+						strFirst.substr(posStr + COMMENT_PREFIX.length()).c_str());
 				++itValue;
 			}
 		}
@@ -370,9 +422,11 @@ bool CUpdateMgr::SaveGUIIni( std::string strFilePath, const std::map<std::string
 		for (; itValue != rVecValue.end(); ++itValue) {
 			fprintf(pFile, "%s\n", itValue->c_str());
 		}
+
 		fprintf(pFile, "\n");
 	}
 
 	fclose(pFile);
+	LogInfoIn("***** save %s", strFilePath.c_str());
 	return true;
 }

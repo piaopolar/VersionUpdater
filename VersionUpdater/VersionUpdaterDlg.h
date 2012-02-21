@@ -11,6 +11,9 @@ class CVersionUpdaterDlg : public CDialog
 private:
 	void SaveConfig(void);
 	void LoadConfig(void);
+private:
+	bool m_bDealGUI;
+	bool m_bDeal3DMotion;
 
 // ----------------------------------------------------------------------------
 //    Construction
@@ -42,4 +45,6 @@ public:
 	CString m_cstrPathBefore;
 	CString m_cstrPathAfter;
 	CEdit m_edtLog;
+	afx_msg void OnBnClickedChk3dmotion();
+	afx_msg void OnBnClickedChkGui();
 };
