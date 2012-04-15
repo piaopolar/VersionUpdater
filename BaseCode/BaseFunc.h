@@ -2,7 +2,7 @@
 #include <afxwin.h>
 #include <string>
 
-#define CONFIG_INI	"config.ini"
+#define CONFIG_INI	"./config.ini"
 
 const int MAX_STRING = 1024;
 
