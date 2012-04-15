@@ -353,6 +353,8 @@ bool CUpdateMgr::LoadGUIIni(std::string strFilePath,
 bool CUpdateMgr::Save3DMotionIni(std::string strFilePath,
 								 const std::map<__int64, std::string> &mapData)
 {
+	MyMakeSureDirectoryPathExists(strFilePath);
+
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	FILE *pFile = fopen(strFilePath.c_str(), "w");
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -383,6 +385,8 @@ bool CUpdateMgr::Save3DMotionIni(std::string strFilePath,
 bool CUpdateMgr::SaveGUIIni(std::string strFilePath,
 							const std::map<std::string, std::vector<std::string> > &mapData)
 {
+	MyMakeSureDirectoryPathExists(strFilePath);
+
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	FILE *pFile = fopen(strFilePath.c_str(), "w");
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -429,4 +433,17 @@ bool CUpdateMgr::SaveGUIIni(std::string strFilePath,
 	fclose(pFile);
 	LogInfoIn("***** save %s", strFilePath.c_str());
 	return true;
+}
+
+// ============================================================================
+// ==============================================================================
+bool CUpdateMgr::UpdateFile(const char *pszFile, int nType)
+{
+	switch (nType) {
+	case TYPE_3DMOTION: return this->Update3DMotionLike(pszFile); break;
+	case TYPE_GUI:		return this->UpdateGUILike(pszFile); break;
+	default:			break;
+	}
+
+	return false;
 }

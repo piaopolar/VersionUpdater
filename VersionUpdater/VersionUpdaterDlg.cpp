@@ -54,8 +54,6 @@ END_MESSAGE_MAP()
 CVersionUpdaterDlg::CVersionUpdaterDlg(CWnd *pParent /* NULL */ ) : CDialog(CVersionUpdaterDlg::IDD, pParent), m_cstrPathOld(_T("")), m_cstrPathNew(_T("")), m_cstrPathBefore(_T("")), m_cstrPathAfter(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
-	m_bDealGUI = false;
-	m_bDeal3DMotion = false;
 }
 
 // ============================================================================
@@ -77,8 +75,6 @@ BEGIN_MESSAGE_MAP(CVersionUpdaterDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED
 (IDC_BTN_PROCESS, &CVersionUpdaterDlg::OnBnClickedBtnProcess)
-	ON_BN_CLICKED(IDC_CHK_3DMOTION, &CVersionUpdaterDlg::OnBnClickedChk3dmotion)
-	ON_BN_CLICKED(IDC_CHK_GUI, &CVersionUpdaterDlg::OnBnClickedChkGui)
 END_MESSAGE_MAP()
 
 // ============================================================================
@@ -195,12 +191,11 @@ void CVersionUpdaterDlg::OnBnClickedBtnProcess()
 	CUpdateMgr::GetInstance().SetEnvPath(m_cstrPathOld, m_cstrPathNew,
 										 m_cstrPathBefore, m_cstrPathAfter);
 
-	if (m_bDealGUI) {
-		CUpdateMgr::GetInstance().UpdateGUI();
-	}
-
-	if (m_bDeal3DMotion) {
-		CUpdateMgr::GetInstance().Update3DMotion();
+	std::vector<FILE_TYPE_INFO>::const_iterator it(m_vecFileType.begin());
+	for (; it != m_vecFileType.end(); ++it) {
+		if (it->m_pChk->GetCheck()) {
+			CUpdateMgr::GetInstance().UpdateFile(it->m_strFile.c_str(), it->m_nType);
+		}
 	}
 
 	LogInfoIn("Process Finish");
@@ -222,6 +217,59 @@ void CVersionUpdaterDlg::LoadConfig(void)
 	GetPrivateProfileString("Path", "After", "",
 							m_cstrPathAfter.GetBuffer(MAX_PATH), MAX_PATH,
 							CONFIG_INI);
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	int nAmount = GetPrivateProfileInt("Type", "Amount", 0, CONFIG_INI);
+	int nX = 66;
+	int nY = 200;
+	int nW = 150;
+	int nH = 50;
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	for (int i = 1; i <= nAmount; ++i) {
+
+		//~~~~~~~~~~~~~~~~~~~~
+		char szKey[MAX_STRING];
+		char szData[MAX_STRING];
+		//~~~~~~~~~~~~~~~~~~~~
+
+		_snprintf(szKey, sizeof(szKey), "File%d", i);
+		GetPrivateProfileString("Type", szKey, "", szData, sizeof(szData),
+								CONFIG_INI);
+
+		//~~~~~~~~~~~~~~~~~~~~
+		char szName[MAX_STRING];
+		int nType;
+		int nDefaultCheck;
+		//~~~~~~~~~~~~~~~~~~~~
+
+		if (3 == sscanf(szData, "%[^|]|%d|%d", szName, &nType, &nDefaultCheck)) {
+
+			//~~~~~~~~~~~~~~~~
+			FILE_TYPE_INFO info;
+			//~~~~~~~~~~~~~~~~
+
+			info.m_strFile = szName;
+			info.m_nType = nType;
+			info.m_pChk = new CButton;
+
+			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			CRect rect(nX + m_vecFileType.size() % 3 * nW,
+					   nY + m_vecFileType.size() / 3 * nH,
+					   nX + m_vecFileType.size() % 3 * nW + nW,
+					   nY + m_vecFileType.size() / 3 * nH + nH);
+			BOOL bRet = info.m_pChk->Create(szName,
+											BS_AUTOCHECKBOX | WS_VISIBLE | WS_CHILD,
+											rect, this,
+											2000 + m_vecFileType.size());
+			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+			info.m_pChk->SetCheck(nDefaultCheck);
+			info.m_pChk->ShowWindow(SW_SHOW);
+			m_vecFileType.push_back(info);
+		}
+	}
+
 	this->UpdateData(FALSE);
 }
 
@@ -235,18 +283,4 @@ void CVersionUpdaterDlg::SaveConfig(void)
 	WritePrivateProfileString("Path", "New", m_cstrPathNew, CONFIG_INI);
 	WritePrivateProfileString("Path", "Before", m_cstrPathBefore, CONFIG_INI);
 	WritePrivateProfileString("Path", "After", m_cstrPathAfter, CONFIG_INI);
-}
-
-// ============================================================================
-// ==============================================================================
-void CVersionUpdaterDlg::OnBnClickedChk3dmotion()
-{
-	m_bDeal3DMotion = !m_bDeal3DMotion;
-}
-
-// ============================================================================
-// ==============================================================================
-void CVersionUpdaterDlg::OnBnClickedChkGui()
-{
-	m_bDealGUI = !m_bDealGUI;
 }

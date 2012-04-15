@@ -1,5 +1,6 @@
 // VersionUpdaterDlg.h : header file
 #pragma once
+#include <vector>
 #include <string>
 #include "afxwin.h"
 
@@ -12,8 +13,14 @@ private:
 	void SaveConfig(void);
 	void LoadConfig(void);
 private:
-	bool m_bDealGUI;
-	bool m_bDeal3DMotion;
+	struct FILE_TYPE_INFO
+	{
+		int m_nType;
+		std::string m_strFile;
+		CButton *m_pChk;
+	};
+
+	std::vector<FILE_TYPE_INFO> m_vecFileType;
 
 // ----------------------------------------------------------------------------
 //    Construction
@@ -45,6 +52,4 @@ public:
 	CString m_cstrPathBefore;
 	CString m_cstrPathAfter;
 	CEdit m_edtLog;
-	afx_msg void OnBnClickedChk3dmotion();
-	afx_msg void OnBnClickedChkGui();
 };
