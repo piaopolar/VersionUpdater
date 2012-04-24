@@ -63,8 +63,6 @@ void Update(const std::map<INDEX, DATA> &mapOld,
 			if (itOld->second != itNew->second) {
 				mapChg.insert(std::map<INDEX, DATA>::value_type(itNew->first,
 							  itNew->second));
-				rMapAllChg.insert(std::map<INDEX, DATA>::value_type(
-									  itNew->first, itNew->second));
 			}
 
 			++itNew;
@@ -76,8 +74,6 @@ void Update(const std::map<INDEX, DATA> &mapOld,
 		if (itNew->first < itOld->first) {
 			mapAdd.insert(std::map<INDEX, DATA>::value_type(itNew->first,
 						  itNew->second));
-			rMapAllChg.insert(std::map<INDEX, DATA>::value_type(itNew->first,
-							  itNew->second));
 			++itNew;
 
 			continue;
@@ -90,13 +86,16 @@ void Update(const std::map<INDEX, DATA> &mapOld,
 
 	while (itNew != mapNew.end()) {
 		mapAdd.insert(std::map<INDEX, DATA>::value_type(itNew->first, itNew->second));
-		rMapAllChg.insert(std::map<INDEX, DATA>::value_type(itNew->first, itNew->second));
 		++itNew;
 	}
 
 	LogInfoIn("ana ok add %d chg %d", mapAdd.size(), mapChg.size());
 
 	rMapAfter = mapBefore;
+
+	//~~~~~~~~~~~~~~~~~~~~
+	int nReadySameCount = 0;
+	//~~~~~~~~~~~~~~~~~~~~
 
 	for (std::map<INDEX, DATA>::iterator itAfter = rMapAfter.begin();
 		 itAfter != rMapAfter.end(); ++itAfter) {
@@ -107,18 +106,33 @@ void Update(const std::map<INDEX, DATA> &mapOld,
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		if (itChg != mapChg.end()) {
-			itAfter->second = itChg->second;
+			if (itAfter->second == itChg->second) {
+				++nReadySameCount;
+			} else {
+				itAfter->second = itChg->second;
+				rMapAllChg.insert(*itChg);
+			}
 		}
 	}
 
-	LogInfoIn("replace ok");
+	LogInfoIn("replace ok, total %d, replaced:%d, ingore:%d, unfound:%d",
+			  mapChg.size(), rMapAllChg.size(), nReadySameCount,
+			  mapChg.size() - rMapAllChg.size() - nReadySameCount);
+
+	nReadySameCount = 0;
 
 	for (std::map<INDEX, DATA>::const_iterator itAdd = mapAdd.begin();
 		 itAdd != mapAdd.end(); ++itAdd) {
-		rMapAfter[itAdd->first] = itAdd->second;
+		if (rMapAfter[itAdd->first] == itAdd->second) {
+			++nReadySameCount;
+		} else {
+			rMapAfter[itAdd->first] = itAdd->second;
+			rMapAllChg.insert(*itAdd);
+		}
 	}
 
-	LogInfoIn("add ok");
+	LogInfoIn("add ok, total %d, added %d, ingore %d", mapAdd.size(),
+			  mapAdd.size() - nReadySameCount, nReadySameCount);
 }
 
 // ============================================================================
