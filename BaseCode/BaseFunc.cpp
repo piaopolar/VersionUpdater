@@ -1,5 +1,7 @@
 #include "stdafx.h"
 
+#include "boost/regex.hpp"
+
 #include "BaseFunc.h"
 
 CEdit *s_pEditLog;
@@ -8,7 +10,13 @@ CEdit *s_pEditLog;
 // ==============================================================================
 bool IsIncludeFileNamePath(std::string strPath)
 {
-	return strstr(strPath.c_str(), ".");
+	boost::regex expFilePath("(.*)\\\\(.*\\.\\w\\w\\w)$");
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	bool bMatch = boost::regex_match(strPath, expFilePath);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	return bMatch;
 }
 
 // ============================================================================

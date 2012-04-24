@@ -1,6 +1,8 @@
 // VersionUpdaterDlg.cpp : implementation file
 #include "stdafx.h"
 
+#include <algorithm>
+
 #include "BaseCode/BaseFunc.h"
 #include "UpdateMgr.h"
 
@@ -249,6 +251,7 @@ void CVersionUpdaterDlg::LoadConfig(void)
 			FILE_TYPE_INFO info;
 			//~~~~~~~~~~~~~~~~
 
+			std::replace(szName, szName + sizeof(szName), '/', '\\');
 			info.m_strFile = szName;
 			info.m_nType = nType;
 			info.m_pChk = new CButton;

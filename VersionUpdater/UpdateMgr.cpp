@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "boost/regex.hpp"
+
 #include "BaseCode/BaseFunc.h"
 #include "UpdateMgr.h"
 
@@ -11,6 +13,37 @@ const char *INI_3DMOTION = "3dmotion.ini";
 const char *INI_GUI = "gui.ini";
 const char *INI_GUI800 = "gui800X600.ini";
 std::string COMMENT_PREFIX = "comment=";
+
+// ============================================================================
+// ==============================================================================
+
+std::string GetOutFilePath(std::string strFilePath)
+{
+	FormatPath(strFilePath);
+	boost::regex expPath("(.*)\\\\(.*)\\\\(.*\.\\w\\w\\w)$");
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::string strOutFilePath = boost::regex_replace(strFilePath, expPath,
+													  "$1\\\\客户端更新\\\\$2\\\\$3");
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	return strOutFilePath;
+}
+
+// ============================================================================
+// ==============================================================================
+std::string GetAddFilePath(std::string strFilePath)
+{
+	FormatPath(strFilePath);
+	boost::regex expPath("(.*)\\\\(.*)\\\\(.*\.\\w\\w\\w)$");
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::string strAddFilePath = boost::regex_replace(strFilePath, expPath,
+													  "$1\\\\+$2\\\\+$3");
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	return strAddFilePath;
+}
 }
 
 // ============================================================================
@@ -168,11 +201,13 @@ bool CUpdateMgr::Update3DMotionLike(const char *pszFile)
 
 	Update(mapOld, mapNew, mapBefore, mapAfter, mapAllChg);
 
-	if (!this->Save3DMotionIni(m_strEnvAfter + pszFile, mapAfter)) {
+	if (!this->Save3DMotionIni(GetOutFilePath(m_strEnvAfter + pszFile), mapAfter
+		)) {
 		return false;
 	}
 
-	if (!this->Save3DMotionIni(m_strEnvAfter + "+" + pszFile, mapAllChg)) {
+	if (!this->Save3DMotionIni(GetAddFilePath(m_strEnvAfter + pszFile),
+		mapAllChg)) {
 		return false;
 	}
 
@@ -219,11 +254,11 @@ bool CUpdateMgr::UpdateGUILike(const char *pszFile)
 
 	Update(mapOld, mapNew, mapBefore, mapAfter, mapAllChg);
 
-	if (!this->SaveGUIIni(m_strEnvAfter + pszFile, mapAfter)) {
+	if (!this->SaveGUIIni(GetOutFilePath(m_strEnvAfter + pszFile), mapAfter)) {
 		return false;
 	}
 
-	if (!this->SaveGUIIni(m_strEnvAfter + "+" + pszFile, mapAllChg)) {
+	if (!this->SaveGUIIni(GetAddFilePath(m_strEnvAfter + pszFile), mapAllChg)) {
 		return false;
 	}
 
