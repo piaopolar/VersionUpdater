@@ -10,6 +10,7 @@
 class CVersionUpdaterDlg : public CDialog
 {
 private:
+	int GetInputMode(void) const;
 	void SaveConfig(void);
 	void LoadConfig(void);
 private:
@@ -52,4 +53,8 @@ public:
 	CString m_cstrPathBefore;
 	CString m_cstrPathAfter;
 	CEdit m_edtLog;
+	afx_msg void OnBnClickedRadioModeCmp();
+	afx_msg void OnBnClickedRadioModeAdd();
+	afx_msg void OnDestroy();
+	afx_msg void OnBnClickedBtnClearlog();
 };

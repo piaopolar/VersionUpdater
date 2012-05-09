@@ -75,8 +75,11 @@ BEGIN_MESSAGE_MAP(CVersionUpdaterDlg, CDialog)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	//}}AFX_MSG_MAP
-	ON_BN_CLICKED
-(IDC_BTN_PROCESS, &CVersionUpdaterDlg::OnBnClickedBtnProcess)
+	ON_BN_CLICKED(IDC_BTN_PROCESS, &CVersionUpdaterDlg::OnBnClickedBtnProcess)
+	ON_BN_CLICKED(IDC_RADIO_MODE_CMP, &CVersionUpdaterDlg::OnBnClickedRadioModeCmp)
+	ON_BN_CLICKED(IDC_RADIO_MODE_ADD, &CVersionUpdaterDlg::OnBnClickedRadioModeAdd)
+	ON_WM_DESTROY()
+	ON_BN_CLICKED(IDC_BTN_CLEARLOG, &CVersionUpdaterDlg::OnBnClickedBtnClearlog)
 END_MESSAGE_MAP()
 
 // ============================================================================
@@ -116,10 +119,10 @@ BOOL CVersionUpdaterDlg::OnInitDialog()
 	LoadConfig();
 
 	SetLogEdit(&m_edtLog);
+	((CButton *)GetDlgItem(IDC_RADIO_MODE_CMP))->SetCheck(TRUE);
 
 	// TODO: Add extra initialization here
-	return TRUE;				// return TRUE unless you set the focus to a
-								///control
+	return TRUE;				// return TRUE unless you set the focus to a control
 }
 
 // ============================================================================
@@ -151,8 +154,7 @@ void CVersionUpdaterDlg::OnPaint()
 		CPaintDC dc(this);	// device context for painting
 		//~~~~~~~~~~~~~~
 
-		SendMessage(WM_ICONERASEBKGND,
-					reinterpret_cast<WPARAM> (dc.GetSafeHdc()), 0);
+		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM> (dc.GetSafeHdc()), 0);
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		// Center icon in client rectangle
@@ -190,8 +192,8 @@ void CVersionUpdaterDlg::OnBnClickedBtnProcess()
 {
 	this->SaveConfig();
 
-	CUpdateMgr::GetInstance().SetEnvPath(m_cstrPathOld, m_cstrPathNew,
-										 m_cstrPathBefore, m_cstrPathAfter);
+	CUpdateMgr::GetInstance().SetEnvPath(m_cstrPathOld, m_cstrPathNew, m_cstrPathBefore, m_cstrPathAfter);
+	CUpdateMgr::GetInstance().SetMode(this->GetInputMode());
 
 	std::vector<FILE_TYPE_INFO>::const_iterator it(m_vecFileType.begin());
 	for (; it != m_vecFileType.end(); ++it) {
@@ -207,18 +209,10 @@ void CVersionUpdaterDlg::OnBnClickedBtnProcess()
 // ==============================================================================
 void CVersionUpdaterDlg::LoadConfig(void)
 {
-	GetPrivateProfileString("Path", "Old", "",
-							m_cstrPathOld.GetBuffer(MAX_PATH), MAX_PATH,
-							CONFIG_INI);
-	GetPrivateProfileString("Path", "New", "",
-							m_cstrPathNew.GetBuffer(MAX_PATH), MAX_PATH,
-							CONFIG_INI);
-	GetPrivateProfileString("Path", "Before", "",
-							m_cstrPathBefore.GetBuffer(MAX_PATH), MAX_PATH,
-							CONFIG_INI);
-	GetPrivateProfileString("Path", "After", "",
-							m_cstrPathAfter.GetBuffer(MAX_PATH), MAX_PATH,
-							CONFIG_INI);
+	GetPrivateProfileString("Path", "Old", "", m_cstrPathOld.GetBuffer(MAX_STRING), MAX_STRING, CONFIG_INI);
+	GetPrivateProfileString("Path", "New", "", m_cstrPathNew.GetBuffer(MAX_STRING), MAX_STRING, CONFIG_INI);
+	GetPrivateProfileString("Path", "Before", "", m_cstrPathBefore.GetBuffer(MAX_STRING), MAX_STRING, CONFIG_INI);
+	GetPrivateProfileString("Path", "After", "", m_cstrPathAfter.GetBuffer(MAX_STRING), MAX_STRING, CONFIG_INI);
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	int nAmount = GetPrivateProfileInt("Type", "Amount", 0, CONFIG_INI);
@@ -236,8 +230,7 @@ void CVersionUpdaterDlg::LoadConfig(void)
 		//~~~~~~~~~~~~~~~~~~~~
 
 		_snprintf(szKey, sizeof(szKey), "File%d", i);
-		GetPrivateProfileString("Type", szKey, "", szData, sizeof(szData),
-								CONFIG_INI);
+		GetPrivateProfileString("Type", szKey, "", szData, sizeof(szData), CONFIG_INI);
 
 		//~~~~~~~~~~~~~~~~~~~~
 		char szName[MAX_STRING];
@@ -256,19 +249,16 @@ void CVersionUpdaterDlg::LoadConfig(void)
 			info.m_nType = nType;
 			info.m_pChk = new CButton;
 
-			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-			CRect rect(nX + m_vecFileType.size() % 3 * nW,
-					   nY + m_vecFileType.size() / 3 * nH,
-					   nX + m_vecFileType.size() % 3 * nW + nW,
-					   nY + m_vecFileType.size() / 3 * nH + nH);
-			BOOL bRet = info.m_pChk->Create(szName,
-											BS_AUTOCHECKBOX | WS_VISIBLE | WS_CHILD,
-											rect, this,
+			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			CRect rect(nX + m_vecFileType.size() % 3 * nW, nY + m_vecFileType.size() / 3 * nH,
+					   nX + m_vecFileType.size() % 3 * nW + nW, nY + m_vecFileType.size() / 3 * nH + nH);
+			BOOL bRet = info.m_pChk->Create(szName, BS_AUTOCHECKBOX | WS_VISIBLE | WS_CHILD, rect, this,
 											2000 + m_vecFileType.size());
-			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 			info.m_pChk->SetCheck(nDefaultCheck);
 			info.m_pChk->ShowWindow(SW_SHOW);
+
 			m_vecFileType.push_back(info);
 		}
 	}
@@ -286,4 +276,53 @@ void CVersionUpdaterDlg::SaveConfig(void)
 	WritePrivateProfileString("Path", "New", m_cstrPathNew, CONFIG_INI);
 	WritePrivateProfileString("Path", "Before", m_cstrPathBefore, CONFIG_INI);
 	WritePrivateProfileString("Path", "After", m_cstrPathAfter, CONFIG_INI);
+}
+
+// ============================================================================
+// ==============================================================================
+void CVersionUpdaterDlg::OnBnClickedRadioModeCmp()
+{
+	GetDlgItem(IDC_EDIT_OLD)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_NEW)->EnableWindow(TRUE);
+}
+
+// ============================================================================
+// ==============================================================================
+void CVersionUpdaterDlg::OnBnClickedRadioModeAdd()
+{
+	GetDlgItem(IDC_EDIT_OLD)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_NEW)->EnableWindow(FALSE);
+}
+
+// ============================================================================
+// ==============================================================================
+int CVersionUpdaterDlg::GetInputMode(void) const
+{
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	int nMode = CUpdateMgr::MODE_CMP;
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	if (IsDlgButtonChecked(IDC_RADIO_MODE_ADD)) {
+		nMode = CUpdateMgr::MODE_ADD;
+	}
+
+	return nMode;
+}
+
+// ============================================================================
+// ==============================================================================
+void CVersionUpdaterDlg::OnDestroy()
+{
+	for (std::vector<FILE_TYPE_INFO>::const_iterator it(m_vecFileType.begin()); it != m_vecFileType.end(); ++it) {
+		delete it->m_pChk;
+	}
+
+	CDialog::OnDestroy();
+}
+
+// ============================================================================
+// ==============================================================================
+void CVersionUpdaterDlg::OnBnClickedBtnClearlog()
+{
+	m_edtLog.SetWindowText("");
 }

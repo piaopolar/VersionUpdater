@@ -88,13 +88,22 @@ void TrimRight(char *pszStr)
 // ==============================================================================
 void LogInfoIn(const char *pszFormat, ...)
 {
-	//~~~~~~~~~~~~~~~~~~~~
-	static CString cstrData;
+	if (NULL == s_pEditLog) {
+		return;
+	}
+
+	//~~~~~~~~~~~~~
+	CString cstrData;
+	//~~~~~~~~~~~~~
+
+	s_pEditLog->GetWindowText(cstrData);
+
+	//~~~~~~~~~~~~~~~~
 	std::string strLine;
 	va_list args;
 	int len;
 	char *buffer;
-	//~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~
 
 	va_start(args, pszFormat);
 	len = _vscprintf(pszFormat, args) + 1;	// _vscprintf doesn't count
@@ -109,26 +118,49 @@ void LogInfoIn(const char *pszFormat, ...)
 	strLine += "\r\n";
 	cstrData += strLine.c_str();
 
-	if (NULL == s_pEditLog) {
-		return;
-	}
-
 	s_pEditLog->SetWindowText(cstrData.GetBuffer(0));
 	s_pEditLog->UpdateWindow();
 	s_pEditLog->LineScroll(s_pEditLog->GetLineCount());
+
+	LogFile(strLine.c_str());
 }
 
 // ============================================================================
 // ==============================================================================
 void LogFile(const char *pszFormat, ...)
 {
-	//~~~~~~~~~~~~~~~~~~~~
-	static CString cstrData;
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	static std::string s_strLogFile = "";
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	if (s_strLogFile.empty()) {
+
+		//~~~~~~~~~~~~~~~~~~~~~~~
+		char szWorkDir[MAX_STRING];
+		//~~~~~~~~~~~~~~~~~~~~~~~
+
+		::GetCurrentDirectory(sizeof(szWorkDir), szWorkDir);
+
+		strcat(szWorkDir, "\\Log\\");
+
+		//~~~~~~~~~~~~~~~~~~~~~~
+		char szLogDir[MAX_STRING];
+		//~~~~~~~~~~~~~~~~~~~~~~
+
+		GetPrivateProfileString("GlobalSet", "LogDir", szWorkDir, szLogDir, sizeof(szLogDir), CONFIG_INI);
+		s_strLogFile = szLogDir;
+		FormatPath(s_strLogFile);
+		MyMakeSureDirectoryPathExists(s_strLogFile);
+		s_strLogFile += GetTimeStr();
+		s_strLogFile += ".log";
+	}
+
+	//~~~~~~~~~~~~~~~~
 	std::string strLine;
 	va_list args;
 	int len;
 	char *buffer;
-	//~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~
 
 	va_start(args, pszFormat);
 	len = _vscprintf(pszFormat, args) + 1;	// _vscprintf doesn't count
@@ -140,16 +172,9 @@ void LogFile(const char *pszFormat, ...)
 	strLine = buffer;
 	free(buffer);
 
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	char szLogFile[_MAX_PATH] = { 0 };
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-	GetPrivateProfileString("GlobalSet", "LogFile", "", szLogFile,
-							sizeof(szLogFile), CONFIG_INI);
-
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	FILE *pFile = fopen(szLogFile, "w+");
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	FILE *pFile = fopen(s_strLogFile.c_str(), "a+");
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	if (NULL == pFile) {
 		return;
@@ -194,9 +219,7 @@ void SetLogEdit(CEdit *pEditLog)
 
 // ============================================================================
 // ==============================================================================
-void ReplaceStdString(std::string &str,
-					  const std::string &strSrc,
-					  const std::string &strDest)
+void ReplaceStdString(std::string &str, const std::string &strSrc, const std::string &strDest)
 {
 	//~~~~~~~~~~~~~~~~~~~~~~~
 	CString cstr = str.c_str();
@@ -254,13 +277,11 @@ bool CreateIntermediateDirectory(const char *strDirectory)
 			iLastIndex++;
 		}
 
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		// 如果该文件夹不存在，则创建之
-		HANDLE hDirectory = CreateFile(csIntermediateDirectory, GENERIC_READ,
-									   FILE_SHARE_READ, NULL, OPEN_EXISTING,
-									   FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS,
-									   NULL);
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		HANDLE hDirectory = CreateFile(csIntermediateDirectory, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+									   FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS, NULL);
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		if (hDirectory == INVALID_HANDLE_VALUE) {
 
@@ -287,4 +308,24 @@ bool CreateIntermediateDirectory(const char *strDirectory)
 	}
 
 	return !bErrorOccur;
+}
+
+// ============================================================================
+// ==============================================================================
+std::string GetTimeStr(void)
+{
+	//~~~~~~~~~
+	time_t ltime;
+	//~~~~~~~~~
+
+	time(&ltime);
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	struct tm *pTime = localtime(&ltime);
+	char szTmp[MAX_STRING] = { 0 };
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	_snprintf(szTmp, MAX_STRING - 1, "%04d_%02d_%02d__%02d_%02d_%02d", pTime->tm_year + 1900, pTime->tm_mon + 1,
+			  pTime->tm_mday, pTime->tm_hour, pTime->tm_min, pTime->tm_sec);
+	return std::string(szTmp);
 }

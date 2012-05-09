@@ -6,6 +6,7 @@
 
 const int MAX_STRING = 1024;
 
+std::string GetTimeStr(void);
 void FormatPath(std::string &strPath);
 bool IsIncludeFileNamePath(std::string strPath);
 void MyMakeSureDirectoryPathExists(std::string strPath);

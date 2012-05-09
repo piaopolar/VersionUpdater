@@ -22,10 +22,9 @@ std::string GetOutFilePath(std::string strFilePath)
 	FormatPath(strFilePath);
 	boost::regex expPath("(.*)\\\\(.*)\\\\(.*\.\\w\\w\\w)$");
 
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	std::string strOutFilePath = boost::regex_replace(strFilePath, expPath,
-													  "$1\\\\客户端更新\\\\$2\\\\$3");
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::string strOutFilePath = boost::regex_replace(strFilePath, expPath, "$1\\\\客户端更新\\\\$2\\\\$3");
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	return strOutFilePath;
 }
@@ -37,10 +36,9 @@ std::string GetAddFilePath(std::string strFilePath)
 	FormatPath(strFilePath);
 	boost::regex expPath("(.*)\\\\(.*)\\\\(.*\.\\w\\w\\w)$");
 
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	std::string strAddFilePath = boost::regex_replace(strFilePath, expPath,
-													  "$1\\\\+$2\\\\+$3");
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::string strAddFilePath = boost::regex_replace(strFilePath, expPath, "$1\\\\+$2\\\\+$3");
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	return strAddFilePath;
 }
@@ -60,10 +58,7 @@ CUpdateMgr::~CUpdateMgr(void)
 
 // ============================================================================
 // ==============================================================================
-void CUpdateMgr::SetEnvPath(const char *pszOld,
-							const char *pszNew,
-							const char *pszBefore,
-							const char *pszAfter)
+void CUpdateMgr::SetEnvPath(const char *pszOld, const char *pszNew, const char *pszBefore, const char *pszAfter)
 {
 	m_strEnvOld = pszOld;
 	m_strEnvNew = pszNew;
@@ -94,8 +89,7 @@ void Update(const std::map<INDEX, DATA> &mapOld,
 	while (itNew != mapNew.end() && itOld != mapOld.end()) {
 		if (itNew->first == itOld->first) {
 			if (itOld->second != itNew->second) {
-				mapChg.insert(std::map<INDEX, DATA>::value_type(itNew->first,
-							  itNew->second));
+				mapChg.insert(std::map<INDEX, DATA>::value_type(itNew->first, itNew->second));
 			}
 
 			++itNew;
@@ -105,8 +99,7 @@ void Update(const std::map<INDEX, DATA> &mapOld,
 		}
 
 		if (itNew->first < itOld->first) {
-			mapAdd.insert(std::map<INDEX, DATA>::value_type(itNew->first,
-						  itNew->second));
+			mapAdd.insert(std::map<INDEX, DATA>::value_type(itNew->first, itNew->second));
 			++itNew;
 
 			continue;
@@ -130,8 +123,7 @@ void Update(const std::map<INDEX, DATA> &mapOld,
 	int nReadySameCount = 0;
 	//~~~~~~~~~~~~~~~~~~~~
 
-	for (std::map<INDEX, DATA>::iterator itAfter = rMapAfter.begin();
-		 itAfter != rMapAfter.end(); ++itAfter) {
+	for (std::map<INDEX, DATA>::iterator itAfter = rMapAfter.begin(); itAfter != rMapAfter.end(); ++itAfter) {
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		INDEX key = itAfter->first;
@@ -148,14 +140,12 @@ void Update(const std::map<INDEX, DATA> &mapOld,
 		}
 	}
 
-	LogInfoIn("replace ok, total %d, replaced:%d, ingore:%d, unfound:%d",
-			  mapChg.size(), rMapAllChg.size(), nReadySameCount,
-			  mapChg.size() - rMapAllChg.size() - nReadySameCount);
+	LogInfoIn("replace ok, total %d, replaced:%d, ingore:%d, unfound:%d", mapChg.size(), rMapAllChg.size(),
+			  nReadySameCount, mapChg.size() - rMapAllChg.size() - nReadySameCount);
 
 	nReadySameCount = 0;
 
-	for (std::map<INDEX, DATA>::const_iterator itAdd = mapAdd.begin();
-		 itAdd != mapAdd.end(); ++itAdd) {
+	for (std::map<INDEX, DATA>::const_iterator itAdd = mapAdd.begin(); itAdd != mapAdd.end(); ++itAdd) {
 		if (rMapAfter[itAdd->first] == itAdd->second) {
 			++nReadySameCount;
 		} else {
@@ -164,8 +154,7 @@ void Update(const std::map<INDEX, DATA> &mapOld,
 		}
 	}
 
-	LogInfoIn("add ok, total %d, added %d, ingore %d", mapAdd.size(),
-			  mapAdd.size() - nReadySameCount, nReadySameCount);
+	LogInfoIn("add ok, total %d, added %d, ingore %d", mapAdd.size(), mapAdd.size() - nReadySameCount, nReadySameCount);
 }
 
 // ============================================================================
@@ -182,12 +171,22 @@ bool CUpdateMgr::Update3DMotionLike(const char *pszFile)
 	std::map<__int64, std::string> mapBefore;
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	if (!this->Load3DMotionIni(m_strEnvOld + pszFile, mapOld)) {
-		return false;
-	}
+	if (MODE_ADD == m_nMode) {
+		if (!this->Load3DMotionIni(m_strEnvBefore + pszFile, mapOld)) {
+			return false;
+		}
 
-	if (!this->Load3DMotionIni(m_strEnvNew + pszFile, mapNew)) {
-		return false;
+		if (!this->Load3DMotionIni(GetAddFilePath(m_strEnvBefore + pszFile), mapNew)) {
+			return false;
+		}
+	} else {
+		if (!this->Load3DMotionIni(m_strEnvOld + pszFile, mapOld)) {
+			return false;
+		}
+
+		if (!this->Load3DMotionIni(m_strEnvNew + pszFile, mapNew)) {
+			return false;
+		}
 	}
 
 	if (!this->Load3DMotionIni(m_strEnvBefore + pszFile, mapBefore)) {
@@ -201,24 +200,15 @@ bool CUpdateMgr::Update3DMotionLike(const char *pszFile)
 
 	Update(mapOld, mapNew, mapBefore, mapAfter, mapAllChg);
 
-	if (!this->Save3DMotionIni(GetOutFilePath(m_strEnvAfter + pszFile), mapAfter
-		)) {
+	if (!this->Save3DMotionIni(GetOutFilePath(m_strEnvAfter + pszFile), mapAfter)) {
 		return false;
 	}
 
-	if (!this->Save3DMotionIni(GetAddFilePath(m_strEnvAfter + pszFile),
-		mapAllChg)) {
+	if (!this->Save3DMotionIni(GetAddFilePath(m_strEnvAfter + pszFile), mapAllChg)) {
 		return false;
 	}
 
 	return true;
-}
-
-// ============================================================================
-// ==============================================================================
-bool CUpdateMgr::Update3DMotion(void)
-{
-	return this->Update3DMotionLike(INI_3DMOTION);
 }
 
 // ============================================================================
@@ -235,12 +225,22 @@ bool CUpdateMgr::UpdateGUILike(const char *pszFile)
 	std::map<std::string, std::vector<std::string> > mapBefore;
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	if (!this->LoadGUIIni(m_strEnvOld + pszFile, mapOld)) {
-		return false;
-	}
+	if (MODE_ADD == m_nMode) {
+		if (!this->LoadGUIIni(m_strEnvBefore + pszFile, mapOld)) {
+			return false;
+		}
 
-	if (!this->LoadGUIIni(m_strEnvNew + pszFile, mapNew)) {
-		return false;
+		if (!this->LoadGUIIni(GetAddFilePath(m_strEnvBefore + pszFile), mapNew)) {
+			return false;
+		}
+	} else {
+		if (!this->LoadGUIIni(m_strEnvOld + pszFile, mapOld)) {
+			return false;
+		}
+
+		if (!this->LoadGUIIni(m_strEnvNew + pszFile, mapNew)) {
+			return false;
+		}
 	}
 
 	if (!this->LoadGUIIni(m_strEnvBefore + pszFile, mapBefore)) {
@@ -267,21 +267,7 @@ bool CUpdateMgr::UpdateGUILike(const char *pszFile)
 
 // ============================================================================
 // ==============================================================================
-bool CUpdateMgr::UpdateGUI(void)
-{
-	//~~~~~~~~~~~~~
-	bool bRet = true;
-	//~~~~~~~~~~~~~
-
-	bRet = bRet && this->UpdateGUILike(INI_GUI);
-	bRet = bRet && this->UpdateGUILike(INI_GUI800);
-	return bRet;
-}
-
-// ============================================================================
-// ==============================================================================
-bool CUpdateMgr::Load3DMotionIni(std::string strFilePath,
-								 std::map<__int64, std::string> &mapData)
+bool CUpdateMgr::Load3DMotionIni(std::string strFilePath, std::map<__int64, std::string> &mapData)
 {
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	FILE *pFile = fopen(strFilePath.c_str(), "r");
@@ -333,8 +319,7 @@ bool CUpdateMgr::Load3DMotionIni(std::string strFilePath,
 
 // ============================================================================
 // ==============================================================================
-bool CUpdateMgr::LoadGUIIni(std::string strFilePath,
-							std::map<std::string, std::vector<std::string> > &mapData)
+bool CUpdateMgr::LoadGUIIni(std::string strFilePath, std::map<std::string, std::vector<std::string> > &mapData)
 {
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	FILE *pFile = fopen(strFilePath.c_str(), "r");
@@ -399,8 +384,7 @@ bool CUpdateMgr::LoadGUIIni(std::string strFilePath,
 
 // ============================================================================
 // ==============================================================================
-bool CUpdateMgr::Save3DMotionIni(std::string strFilePath,
-								 const std::map<__int64, std::string> &mapData)
+bool CUpdateMgr::Save3DMotionIni(std::string strFilePath, const std::map<__int64, std::string> &mapData)
 {
 	MyMakeSureDirectoryPathExists(strFilePath);
 
@@ -413,14 +397,11 @@ bool CUpdateMgr::Save3DMotionIni(std::string strFilePath,
 		return false;
 	}
 
-	for (std::map < __int64, std::string >::const_iterator itData = mapData.
-			 begin(); itData != mapData.end(); ++itData) {
+	for (std::map < __int64, std::string >::const_iterator itData = mapData.begin(); itData != mapData.end(); ++itData) {
 		if (itData->first >= 1000000000000) {
-			fprintf(pFile, "%014I64d=%s\n", itData->first,
-					itData->second.c_str());
+			fprintf(pFile, "%014I64d=%s\n", itData->first, itData->second.c_str());
 		} else {
-			fprintf(pFile, "%011I64d=%s\n", itData->first,
-					itData->second.c_str());
+			fprintf(pFile, "%011I64d=%s\n", itData->first, itData->second.c_str());
 		}
 	}
 
@@ -431,8 +412,7 @@ bool CUpdateMgr::Save3DMotionIni(std::string strFilePath,
 
 // ============================================================================
 // ==============================================================================
-bool CUpdateMgr::SaveGUIIni(std::string strFilePath,
-							const std::map<std::string, std::vector<std::string> > &mapData)
+bool CUpdateMgr::SaveGUIIni(std::string strFilePath, const std::map<std::string, std::vector<std::string> > &mapData)
 {
 	MyMakeSureDirectoryPathExists(strFilePath);
 
@@ -445,10 +425,9 @@ bool CUpdateMgr::SaveGUIIni(std::string strFilePath,
 		return false;
 	}
 
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	std::map<std::string, std::vector<std::string> >::const_iterator itSection =
-		mapData.begin();
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::map<std::string, std::vector<std::string> >::const_iterator itSection = mapData.begin();
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	for (; itSection != mapData.end(); ++itSection) {
 
@@ -465,8 +444,7 @@ bool CUpdateMgr::SaveGUIIni(std::string strFilePath,
 
 			std::string::size_type posStr = strFirst.find(COMMENT_PREFIX);
 			if (posStr != std::string::npos) {
-				fprintf(pFile, "%s\n",
-						strFirst.substr(posStr + COMMENT_PREFIX.length()).c_str());
+				fprintf(pFile, "%s\n", strFirst.substr(posStr + COMMENT_PREFIX.length()).c_str());
 				++itValue;
 			}
 		}
@@ -495,4 +473,11 @@ bool CUpdateMgr::UpdateFile(const char *pszFile, int nType)
 	}
 
 	return false;
+}
+
+// ============================================================================
+// ==============================================================================
+void CUpdateMgr::SetMode(int nMode)
+{
+	m_nMode = nMode;
 }
