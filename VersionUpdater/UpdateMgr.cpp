@@ -397,11 +397,23 @@ bool CUpdateMgr::Save3DMotionIni(std::string strFilePath, const std::map<__int64
 		return false;
 	}
 
-	for (std::map < __int64, std::string >::const_iterator itData = mapData.begin(); itData != mapData.end(); ++itData) {
-		if (itData->first >= 1000000000000) {
-			fprintf(pFile, "%014I64d=%s\n", itData->first, itData->second.c_str());
-		} else {
-			fprintf(pFile, "%011I64d=%s\n", itData->first, itData->second.c_str());
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	bool b3DMotion = strstr(strFilePath.c_str(), "3dmotion.ini") ? true : false;
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	if (b3DMotion) {
+		for (std::map < __int64, std::string >::const_iterator itData = mapData.begin(); itData != mapData.end();
+			 ++itData) {
+			if (itData->first >= 1000000000000) {
+				fprintf(pFile, "%014I64d=%s\n", itData->first, itData->second.c_str());
+			} else {
+				fprintf(pFile, "%011I64d=%s\n", itData->first, itData->second.c_str());
+			}
+		}
+	} else {
+		for (std::map < __int64, std::string >::const_iterator itData = mapData.begin(); itData != mapData.end();
+			 ++itData) {
+			fprintf(pFile, "%I64d=%s\n", itData->first, itData->second.c_str());
 		}
 	}
 
