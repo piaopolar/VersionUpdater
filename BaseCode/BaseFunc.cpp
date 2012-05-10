@@ -135,19 +135,23 @@ void LogFile(const char *pszFormat, ...)
 
 	if (s_strLogFile.empty()) {
 
-		//~~~~~~~~~~~~~~~~~~~~~~~
-		char szWorkDir[MAX_STRING];
-		//~~~~~~~~~~~~~~~~~~~~~~~
-
-		::GetCurrentDirectory(sizeof(szWorkDir), szWorkDir);
-
-		strcat(szWorkDir, "\\Log\\");
-
 		//~~~~~~~~~~~~~~~~~~~~~~
 		char szLogDir[MAX_STRING];
 		//~~~~~~~~~~~~~~~~~~~~~~
 
-		GetPrivateProfileString("GlobalSet", "LogDir", szWorkDir, szLogDir, sizeof(szLogDir), CONFIG_INI);
+		GetPrivateProfileString("GlobalSet", "LogDir", "", szLogDir, sizeof(szLogDir), CONFIG_INI);
+
+		if (!strlen(szLogDir)) {
+
+			//~~~~~~~~~~~~~~~~~~~~~~~
+			char szWorkDir[MAX_STRING];
+			//~~~~~~~~~~~~~~~~~~~~~~~
+
+			::GetCurrentDirectory(sizeof(szLogDir), szLogDir);
+
+			strcat(szLogDir, "\\Log\\");
+		}
+
 		s_strLogFile = szLogDir;
 		FormatPath(s_strLogFile);
 		MyMakeSureDirectoryPathExists(s_strLogFile);
