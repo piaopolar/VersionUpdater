@@ -20,7 +20,7 @@ std::string COMMENT_PREFIX = "comment=";
 std::string GetOutFilePath(std::string strFilePath)
 {
 	FormatPath(strFilePath);
-	boost::regex expPath("(.*)\\\\(.*)\\\\(.*\.\\w\\w\\w)$");
+	boost::regex expPath("(.*)\\\\(.*)\\\\(.*\\.\\w\\w\\w)$");
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	std::string strOutFilePath = boost::regex_replace(strFilePath, expPath, "$1\\\\客户端更新\\\\$2\\\\$3");
@@ -34,7 +34,7 @@ std::string GetOutFilePath(std::string strFilePath)
 std::string GetAddFilePath(std::string strFilePath)
 {
 	FormatPath(strFilePath);
-	boost::regex expPath("(.*)\\\\(.*)\\\\(.*\.\\w\\w\\w)$");
+	boost::regex expPath("(.*)\\\\(.*)\\\\(.*\\.\\w\\w\\w)$");
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	std::string strAddFilePath = boost::regex_replace(strFilePath, expPath, "$1\\\\+$2\\\\+$3");
@@ -332,7 +332,6 @@ bool CUpdateMgr::LoadGUIIni(std::string strFilePath, std::map<std::string, std::
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	char szLine[MAX_STRING];
-	char szTmp[MAX_STRING];
 	std::string strKey;
 	std::string strComment;
 	std::vector<std::string> vecSection;

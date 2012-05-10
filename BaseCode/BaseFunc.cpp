@@ -143,10 +143,6 @@ void LogFile(const char *pszFormat, ...)
 
 		if (!strlen(szLogDir)) {
 
-			//~~~~~~~~~~~~~~~~~~~~~~~
-			char szWorkDir[MAX_STRING];
-			//~~~~~~~~~~~~~~~~~~~~~~~
-
 			::GetCurrentDirectory(sizeof(szLogDir), szLogDir);
 
 			strcat(szLogDir, "\\Log\\");
@@ -259,17 +255,8 @@ bool CreateIntermediateDirectory(const char *strDirectory)
 	bool bErrorOccur = false;
 	CString csDirectory = strDirectory;
 	CString csIntermediateDirectory;
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#if 0
-	csDirectory.Replace('/', '//');
-	while (csDirectory.Replace("////", "//") > 0);
-	csDirectory.TrimRight('//');
-#endif
-
-	//~~~~~~~~~~~~~~~
 	int iLastIndex = 0;
-	//~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	while (true) {
 		iLastIndex = csDirectory.Find('\\', iLastIndex);
@@ -293,12 +280,7 @@ bool CreateIntermediateDirectory(const char *strDirectory)
 			BOOL bCreated = CreateDirectory(csIntermediateDirectory, NULL);
 			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-			if (!bCreated)
-			{
-#if 0
-				// logger.Log (LL_ERROR, "Create directory %s error!
-				// ErrorCode=%d", csIntermediateDirectory, GetLastError () );
-#endif
+			if (!bCreated) {
 				bErrorOccur = true;
 				break;
 			}

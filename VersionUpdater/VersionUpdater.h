@@ -1,30 +1,26 @@
 // VersionUpdater.h : main header file for the PROJECT_NAME application
-//
-
 #pragma once
-
 #ifndef __AFXWIN_H__
-	#error "include 'stdafx.h' before including this file for PCH"
+#error "include 'stdafx.h' before including this file for PCH"
 #endif
+#include "resource.h"	// main symbols
 
-#include "resource.h"		// main symbols
-
-
-// CVersionUpdaterApp:
-// See VersionUpdater.cpp for the implementation of this class
-//
-
+// ============================================================================
+//    CVersionUpdaterApp: See VersionUpdater.cpp for the implementation of this
+//    class
+// ============================================================================
 class CVersionUpdaterApp : public CWinApp
 {
 public:
 	CVersionUpdaterApp();
 
-// Overrides
-	public:
+// ----------------------------------------------------------------------------
+//    Overrides
+// ----------------------------------------------------------------------------
+public:
 	virtual BOOL InitInstance();
 
-// Implementation
-
+	// Implementation
 	DECLARE_MESSAGE_MAP()
 };
 

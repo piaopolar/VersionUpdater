@@ -217,9 +217,9 @@ void CVersionUpdaterDlg::LoadConfig(void)
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	int nAmount = GetPrivateProfileInt("Type", "Amount", 0, CONFIG_INI);
 	int nX = 66;
-	int nY = 200;
+	int nY = 210;
 	int nW = 150;
-	int nH = 50;
+	int nH = 25;
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	for (int i = 1; i <= nAmount; ++i) {
