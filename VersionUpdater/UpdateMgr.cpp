@@ -358,13 +358,10 @@ bool CUpdateMgr::Load3DMotionIni(std::string strFilePath, std::map<__int64, std:
 // ==============================================================================
 void ParseGUILine(char szLine[],
 				  std::string &strKey,
+				  std::string &strComment,
 				  std::vector<std::string> &vecSection,
 				  std::map<std::string, std::vector<std::string> > &mapData)
 {
-	//~~~~~~~~~~~~~~~~~~~
-	std::string strComment;
-	//~~~~~~~~~~~~~~~~~~~
-
 	TrimRight(szLine);
 
 	//~~~~~~~
@@ -372,9 +369,24 @@ void ParseGUILine(char szLine[],
 	//~~~~~~~
 
 	// comment
-	pPos = strstr(szLine, "//");
+	pPos = strstr(szLine, COMMENT_PREFIX);
 	if (pPos) {
-		strComment = COMMENT_PREFIX + pPos;
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~
+		std::string strTmp = szLine;
+		//~~~~~~~~~~~~~~~~~~~~~~~~
+
+		if (strTmp.find("comment=/") != std::string::npos || strTmp.find("comment= ") != std::string::npos) {
+			ReplaceStdString(strTmp, "comment=/", COMMENT_PREFIX);
+			ReplaceStdString(strTmp, "comment= ", COMMENT_PREFIX);
+		}
+
+		strncpy(szLine, strTmp.c_str(), sizeof(szLine));
+	} else {
+		pPos = strstr(szLine, "//");
+		if (pPos) {
+			strComment = std::string(COMMENT_PREFIX) + pPos;
+		}
 	}
 
 	// a new section
@@ -435,54 +447,19 @@ bool CUpdateMgr::LoadGUIIni(std::string strFilePath, std::map<std::string, std::
 	std::vector<std::string> vecSection;
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	while (fgets(szLine, sizeof(szLine), pFile)) {
-		TrimRight(szLine);
+	if (m_bUnicodeMode) {
 
-		//~~~~~~~
-		char *pPos;
-		//~~~~~~~
+		//~~~~~~~~~~~~~~~~~~~~~~~~
+		wchar_t wszLine[MAX_STRING];
+		//~~~~~~~~~~~~~~~~~~~~~~~~
 
-		// comment
-		pPos = strstr(szLine, COMMENT_PREFIX);
-		if (pPos) {
-
-			//~~~~~~~~~~~~~~~~~~~~~~~~
-			std::string strTmp = szLine;
-			//~~~~~~~~~~~~~~~~~~~~~~~~
-
-			if (strTmp.find("comment=/") != std::string::npos || strTmp.find("comment= ") != std::string::npos) {
-				ReplaceStdString(strTmp, "comment=/", COMMENT_PREFIX);
-				ReplaceStdString(strTmp, "comment= ", COMMENT_PREFIX);
-			}
-
-			strncpy(szLine, strTmp.c_str(), sizeof(szLine));
-		} else {
-			pPos = strstr(szLine, "//");
-			if (pPos) {
-				strComment = std::string(COMMENT_PREFIX) + pPos;
-			}
+		while (fgetws(wszLine, sizeof(wszLine), pFile)) {
+			UTF16_2_ANSI(wszLine, szLine, sizeof(szLine));
+			ParseGUILine(szLine, strKey, strComment, vecSection, mapData);
 		}
-
-		// a new section
-		if (szLine[0] == '[' && (pPos = strstr(szLine, "]"))) {
-			if (!strKey.empty()) {
-
-				// save old section
-				mapData[strKey] = vecSection;
-			}
-
-			*pPos = 0;
-			strKey = szLine + 1;
-			vecSection.clear();
-
-			if (!strComment.empty()) {
-				vecSection.push_back(strComment);
-				strComment.clear();
-			}
-		}
-
-		if (strstr(szLine, "=")) {
-			vecSection.push_back(szLine);
+	} else {
+		while (fgets(szLine, sizeof(szLine), pFile)) {
+			ParseGUILine(szLine, strKey, strComment, vecSection, mapData);
 		}
 	}
 
