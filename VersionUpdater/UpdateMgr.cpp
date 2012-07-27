@@ -12,7 +12,7 @@ namespace
 const char *INI_3DMOTION = "3dmotion.ini";
 const char *INI_GUI = "gui.ini";
 const char *INI_GUI800 = "gui800X600.ini";
-std::string COMMENT_PREFIX = "comment=";
+const char *COMMENT_PREFIX = "comment=";
 
 // ============================================================================
 // ==============================================================================
@@ -345,9 +345,24 @@ bool CUpdateMgr::LoadGUIIni(std::string strFilePath, std::map<std::string, std::
 		//~~~~~~~
 
 		// comment
-		pPos = strstr(szLine, "//");
+		pPos = strstr(szLine, COMMENT_PREFIX);
 		if (pPos) {
-			strComment = COMMENT_PREFIX + pPos;
+
+			//~~~~~~~~~~~~~~~~~~~~~~~~
+			std::string strTmp = szLine;
+			//~~~~~~~~~~~~~~~~~~~~~~~~
+
+			if (strTmp.find("comment=/") != std::string::npos || strTmp.find("comment= ") != std::string::npos) {
+				ReplaceStdString(strTmp, "comment=/", COMMENT_PREFIX);
+				ReplaceStdString(strTmp, "comment= ", COMMENT_PREFIX);
+			}
+
+			strncpy(szLine, strTmp.c_str(), sizeof(szLine));
+		} else {
+			pPos = strstr(szLine, "//");
+			if (pPos) {
+				strComment = std::string(COMMENT_PREFIX) + pPos;
+			}
 		}
 
 		// a new section
@@ -447,32 +462,22 @@ bool CUpdateMgr::SaveGUIIni(std::string strFilePath, const std::map<std::string,
 		std::vector<std::string>::const_iterator itValue = rVecValue.begin();
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-		if (itValue != rVecValue.end()) {
-
-			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-			std::string strFirst = *itValue;
-			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-			std::string::size_type posStr = strFirst.find(COMMENT_PREFIX);
-			if (posStr != std::string::npos) {
-
-				//~~~~~~~~~~~~~~~~~~~~~~~~~~
-				std::string strComment = "//";
-				//~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-				strComment += strFirst.substr(posStr + COMMENT_PREFIX.length());
-				while (strComment.find("///") != std::string::npos) {
-					ReplaceStdString(strComment, "///", "//");
-				}
-
-				fprintf(pFile, "%s\n", strComment.c_str());
-				++itValue;
-			}
-		}
-
 		fprintf(pFile, "[%s]\n", itSection->first.c_str());
 		for (; itValue != rVecValue.end(); ++itValue) {
-			fprintf(pFile, "%s\n", itValue->c_str());
+
+			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			std::string strValue = *itValue;
+			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+			std::string::size_type posStr = strValue.find(COMMENT_PREFIX);
+			if (posStr != std::string::npos) {
+				while (strValue.find("=/") != std::string::npos || strValue.find("= ") != std::string::npos) {
+					ReplaceStdString(strValue, "=/", "=");
+					ReplaceStdString(strValue, "= ", "=");
+				}
+			}
+
+			fprintf(pFile, "%s\n", strValue.c_str());
 		}
 
 		fprintf(pFile, "\n");
