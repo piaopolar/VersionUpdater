@@ -455,7 +455,17 @@ bool CUpdateMgr::SaveGUIIni(std::string strFilePath, const std::map<std::string,
 
 			std::string::size_type posStr = strFirst.find(COMMENT_PREFIX);
 			if (posStr != std::string::npos) {
-				fprintf(pFile, "%s\n", strFirst.substr(posStr + COMMENT_PREFIX.length()).c_str());
+
+				//~~~~~~~~~~~~~~~~~~~~~~~~~~
+				std::string strComment = "//";
+				//~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+				strComment += strFirst.substr(posStr + COMMENT_PREFIX.length());
+				while (strComment.find("///") != std::string::npos) {
+					ReplaceStdString(strComment, "///", "//");
+				}
+
+				fprintf(pFile, "%s\n", strComment.c_str());
 				++itValue;
 			}
 		}
