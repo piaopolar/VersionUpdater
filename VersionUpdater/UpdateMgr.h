@@ -30,6 +30,7 @@ private:
 	bool Update3DMotionLike(const char *pszFile);
 private:
 	int m_nMode;
+	bool m_bUnicodeMode;
 	std::string m_strEnvOld;
 	std::string m_strEnvNew;
 	std::string m_strEnvBefore;

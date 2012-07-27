@@ -142,7 +142,6 @@ void LogFile(const char *pszFormat, ...)
 		GetPrivateProfileString("GlobalSet", "LogDir", "", szLogDir, sizeof(szLogDir), CONFIG_INI);
 
 		if (!strlen(szLogDir)) {
-
 			::GetCurrentDirectory(sizeof(szLogDir), szLogDir);
 
 			strcat(szLogDir, "\\Log\\");
@@ -314,4 +313,223 @@ std::string GetTimeStr(void)
 	_snprintf(szTmp, MAX_STRING - 1, "%04d_%02d_%02d__%02d_%02d_%02d", pTime->tm_year + 1900, pTime->tm_mon + 1,
 			  pTime->tm_mday, pTime->tm_hour, pTime->tm_min, pTime->tm_sec);
 	return std::string(szTmp);
+}
+
+// ============================================================================
+// ==============================================================================
+int GetFileCode(std::string strFile)
+{
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	HANDLE hFile = CreateFile(strFile.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	if (INVALID_HANDLE_VALUE == hFile) {
+		return -1;
+	}
+
+	//~~~~~~~~~~~~~~~~~~
+	unsigned char buff[2];
+	//~~~~~~~~~~~~~~~~~~
+
+	memset(buff, 0, sizeof(buff));
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	DWORD dwRead = 0;
+	BOOL bRet = ReadFile(hFile, buff, 2, &dwRead, NULL);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	CloseHandle(hFile);
+
+	if (!bRet) {
+		return 0;
+	}
+
+	if (0xFF == buff[0] && 0xFE == buff[1]) {
+		return 1;
+	}
+
+	if (0xEF == buff[0] && 0xBB == buff[1]) {
+		return 2;
+	}
+
+	if (0xFE == buff[0] && 0xFF == buff[1]) {
+		return 3;
+	}
+
+	return 0;
+}
+
+// ============================================================================
+// ==============================================================================
+std::string UTF8ToAnsi(const std::string &strIn, std::string &strOut)
+{
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	WCHAR *strSrc = NULL;
+	TCHAR *szRes = NULL;
+	int i = MultiByteToWideChar(CP_UTF8, 0, strIn.c_str(), -1, NULL, 0);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	strSrc = new WCHAR[i + 1];
+	MultiByteToWideChar(CP_UTF8, 0, strIn.c_str(), -1, strSrc, i);
+
+	i = WideCharToMultiByte(CP_ACP, 0, strSrc, -1, NULL, 0, NULL, NULL);
+
+	szRes = new TCHAR[i + 1];
+	WideCharToMultiByte(CP_ACP, 0, strSrc, -1, szRes, i, NULL, NULL);
+
+	strOut = szRes;
+
+	delete[] strSrc;
+	delete[] szRes;
+
+	return strOut;
+}
+
+// ============================================================================
+// ==============================================================================
+std::string AnsiToUTF8(const std::string &strIn, std::string &strOut)
+{
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	WCHAR *strSrc = NULL;
+	TCHAR *szRes = NULL;
+	int len = MultiByteToWideChar(CP_ACP, 0, (LPCTSTR) strIn.c_str(), -1, NULL, 0);
+	unsigned short *wszUtf8 = new unsigned short[len + 1];
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	memset(wszUtf8, 0, len * 2 + 2);
+	MultiByteToWideChar(CP_ACP, 0, (LPCTSTR) strIn.c_str(), -1, (LPWSTR) wszUtf8, len);
+
+	len = WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR) wszUtf8, -1, NULL, 0, NULL, NULL);
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	char *szUtf8 = new char[len + 1];
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	memset(szUtf8, 0, len + 1);
+	WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR) wszUtf8, -1, szUtf8, len, NULL, NULL);
+
+	strOut = szUtf8;
+
+	delete[] szUtf8;
+	delete[] wszUtf8;
+
+	return strOut;
+}
+
+// ============================================================================
+// ==============================================================================
+std::wstring ANSI_2_UTF16(const std::string &strANSI)
+{
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	int nUnicodeLength = ::MultiByteToWideChar(CP_ACP, 0, strANSI.c_str(), -1, NULL, 0);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	std::wstring strUTF16(nUnicodeLength, _T(' '));
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	int nRet = ::MultiByteToWideChar(CP_ACP, 0, strANSI.c_str(), -1, &strUTF16[0], nUnicodeLength);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	ASSERT(0 != nRet);
+
+	return strUTF16;
+}
+
+// ============================================================================
+// ==============================================================================
+std::string UTF16_2_ANSI(const std::wstring &strUTF16)
+{
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	int nANSILength = ::WideCharToMultiByte(CP_ACP, 0, strUTF16.c_str(), -1, NULL, 0, 0, 0);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	std::string strANSI(nANSILength, ' ');
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	int nRet = ::WideCharToMultiByte(CP_ACP, 0, strUTF16.c_str(), -1, &strANSI[0], nANSILength, 0, 0);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	ASSERT(0 != nRet);
+	return strANSI;
+}
+
+// ============================================================================
+// ==============================================================================
+bool UTF16_2_ANSI(const wchar_t *wszUTF16, char *szANSI, int nBufANSI)
+{
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	int nANSILength = ::WideCharToMultiByte(CP_ACP, 0, wszUTF16, -1, NULL, 0, 0, 0);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	if (nBufANSI < nANSILength) {
+		return false;
+	}
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	int nRet = ::WideCharToMultiByte(CP_ACP, 0, wszUTF16, -1, szANSI, nANSILength, 0, 0);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	ASSERT(0 != nRet);
+	return true;
+}
+
+// ============================================================================
+// ==============================================================================
+std::string UTF16_2_UTF8(const std::wstring &strUTF16)
+{
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	int nUTF8Length = ::WideCharToMultiByte(CP_UTF8, 0, strUTF16.c_str(), -1, NULL, 0, 0, 0);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	std::string strUTF8(nUTF8Length + 1, '\0');
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	int nRet = ::WideCharToMultiByte(CP_UTF8, 0, strUTF16.c_str(), -1, &strUTF8[0], nUTF8Length + 1, 0, 0);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	return strUTF8;
+}
+
+// ============================================================================
+// ==============================================================================
+std::wstring UTF8_2_UTF16(const std::string &strUTF8)
+{
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	int nUTF16Length = ::MultiByteToWideChar(CP_UTF8, 0, strUTF8.c_str(), -1, NULL, 0);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	nUTF16Length += 1;
+	std::wstring strUTF16(nUTF16Length, ' ');
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	int nRet = ::MultiByteToWideChar(CP_UTF8, 0, strUTF8.c_str(), -1, &strUTF16[0], nUTF16Length);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	ASSERT(0 != nRet);
+
+	return strUTF16;
+}
+
+// ============================================================================
+// ==============================================================================
+std::string UTF8_2_ANSI(const std::string &strUTF8)
+{
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::wstring wstrUTF16 = UTF8_2_UTF16(strUTF8);
+	std::string strANSI = UTF16_2_ANSI(wstrUTF16);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	return strANSI;
+}
+
+// ============================================================================
+// ==============================================================================
+std::string ANSI_2_UTF8(const std::string &strANSI)
+{
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::wstring wstrUTF16 = ANSI_2_UTF16(strANSI);
+	std::string strUTF8 = UTF16_2_UTF8(wstrUTF16);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	return strUTF8;
 }

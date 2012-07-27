@@ -48,6 +48,7 @@ std::string GetAddFilePath(std::string strFilePath)
 // ==============================================================================
 CUpdateMgr::CUpdateMgr(void)
 {
+	m_bUnicodeMode = false;
 }
 
 // ============================================================================
@@ -115,7 +116,7 @@ void Update(const std::map<INDEX, DATA> &mapOld,
 		++itNew;
 	}
 
-	LogInfoIn("ana ok add %d chg %d", mapAdd.size(), mapChg.size());
+	LogInfoIn("ana ok chg %d add %d", mapChg.size(), mapAdd.size());
 
 	rMapAfter = mapBefore;
 
@@ -140,7 +141,7 @@ void Update(const std::map<INDEX, DATA> &mapOld,
 		}
 	}
 
-	LogInfoIn("replace ok, total %d, replaced:%d, ingore:%d, unfound:%d", mapChg.size(), rMapAllChg.size(),
+	LogInfoIn("  replace ok, total %d, replaced:%d, ingore:%d, unfound:%d", mapChg.size(), rMapAllChg.size(),
 			  nReadySameCount, mapChg.size() - rMapAllChg.size() - nReadySameCount);
 
 	nReadySameCount = 0;
@@ -154,7 +155,7 @@ void Update(const std::map<INDEX, DATA> &mapOld,
 		}
 	}
 
-	LogInfoIn("add ok, total %d, added %d, ingore %d", mapAdd.size(), mapAdd.size() - nReadySameCount, nReadySameCount);
+	LogInfoIn("  add ok, total %d, added %d, ingore %d", mapAdd.size(), mapAdd.size() - nReadySameCount, nReadySameCount);
 }
 
 // ============================================================================
@@ -267,63 +268,160 @@ bool CUpdateMgr::UpdateGUILike(const char *pszFile)
 
 // ============================================================================
 // ==============================================================================
+void Parse3DMotionLike(char szLine[], std::map<__int64, std::string> &mapData)
+{
+	TrimRight(szLine);
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	char *pPos = strstr(szLine, "=");
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	if (NULL == pPos) {
+		return;
+	}
+
+	*pPos = 0;
+
+	//~~~~~~~~~~~
+	__int64 i64Key;
+	//~~~~~~~~~~~
+
+	if (1 != sscanf(szLine, "%I64d", &i64Key)) {
+		return;
+	}
+
+	//~~~~~~~~~~~~~~~~~~~~
+	char szPath[MAX_STRING];
+	//~~~~~~~~~~~~~~~~~~~~
+
+	sscanf(pPos + 1, "%s", szPath);
+	mapData[i64Key] = szPath;
+}
+
+// ============================================================================
+// ==============================================================================
 bool CUpdateMgr::Load3DMotionIni(std::string strFilePath, std::map<__int64, std::string> &mapData)
 {
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	FILE *pFile = fopen(strFilePath.c_str(), "r");
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~~~~~
+	std::string strCCS = "";
+	//~~~~~~~~~~~~~~~~~~~~
+
+	if (GetFileCode(strFilePath) > 0) {
+		m_bUnicodeMode = true;
+		strCCS += ", ccs=unicode";
+	}
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::string strOpenFmt = "r";
+	//~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	strOpenFmt += strCCS;
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	FILE *pFile = fopen(strFilePath.c_str(), strOpenFmt.c_str());
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	if (NULL == pFile) {
 		LogInfoIn("!!!!! open %s error", strFilePath.c_str());
 		return false;
 	}
 
-	//~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	char szLine[MAX_STRING];
-	//~~~~~~~~~~~~~~~~~~~~
+	std::string strKey;
+	std::vector<std::string> vecSection;
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	while (fgets(szLine, sizeof(szLine), pFile)) {
-		TrimRight(szLine);
+	if (m_bUnicodeMode) {
 
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		char *pPos = strstr(szLine, "=");
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		//~~~~~~~~~~~~~~~~~~~~~~~~
+		wchar_t wszLine[MAX_STRING];
+		//~~~~~~~~~~~~~~~~~~~~~~~~
 
-		if (NULL == pPos) {
-			continue;
+		while (fgetws(wszLine, sizeof(wszLine), pFile)) {
+			UTF16_2_ANSI(wszLine, szLine, sizeof(szLine));
+			Parse3DMotionLike(szLine, mapData);
 		}
-
-		*pPos = 0;
-
-		//~~~~~~~~~~~
-		__int64 i64Key;
-		//~~~~~~~~~~~
-
-		if (1 != sscanf(szLine, "%I64d", &i64Key)) {
-			continue;
+	} else {
+		while (fgets(szLine, sizeof(szLine), pFile)) {
+			Parse3DMotionLike(szLine, mapData);
 		}
-
-		//~~~~~~~~~~~~~~~~~~~~
-		char szPath[MAX_STRING];
-		//~~~~~~~~~~~~~~~~~~~~
-
-		sscanf(pPos + 1, "%s", szPath);
-		mapData[i64Key] = szPath;
 	}
 
 	fclose(pFile);
 
-	LogInfoIn("load %s ok", strFilePath.c_str());
+	LogInfoIn("load %s ok section %d", strFilePath.c_str(), mapData.size());
 	return true;
+}
+
+// ============================================================================
+// ==============================================================================
+void ParseGUILine(char szLine[],
+				  std::string &strKey,
+				  std::vector<std::string> &vecSection,
+				  std::map<std::string, std::vector<std::string> > &mapData)
+{
+	//~~~~~~~~~~~~~~~~~~~
+	std::string strComment;
+	//~~~~~~~~~~~~~~~~~~~
+
+	TrimRight(szLine);
+
+	//~~~~~~~
+	char *pPos;
+	//~~~~~~~
+
+	// comment
+	pPos = strstr(szLine, "//");
+	if (pPos) {
+		strComment = COMMENT_PREFIX + pPos;
+	}
+
+	// a new section
+	if (szLine[0] == '[' && (pPos = strstr(szLine, "]"))) {
+		if (!strKey.empty()) {
+
+			// save old section
+			mapData[strKey] = vecSection;
+		}
+
+		*pPos = 0;
+		strKey = szLine + 1;
+		vecSection.clear();
+
+		if (!strComment.empty()) {
+			vecSection.push_back(strComment);
+			strComment.clear();
+		}
+	}
+
+	if (strstr(szLine, "=")) {
+		vecSection.push_back(szLine);
+	}
 }
 
 // ============================================================================
 // ==============================================================================
 bool CUpdateMgr::LoadGUIIni(std::string strFilePath, std::map<std::string, std::vector<std::string> > &mapData)
 {
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	FILE *pFile = fopen(strFilePath.c_str(), "r");
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~~~~~
+	std::string strCCS = "";
+	//~~~~~~~~~~~~~~~~~~~~
+
+	if (GetFileCode(strFilePath) > 0) {
+		m_bUnicodeMode = true;
+		strCCS += ", ccs=unicode";
+	}
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~
+	std::string strOpenFmt = "r";
+	//~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	strOpenFmt += strCCS;
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	FILE *pFile = fopen(strFilePath.c_str(), strOpenFmt.c_str());
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	if (NULL == pFile) {
 		LogInfoIn("!!!!! open %s error", strFilePath.c_str());
@@ -392,7 +490,7 @@ bool CUpdateMgr::LoadGUIIni(std::string strFilePath, std::map<std::string, std::
 
 	fclose(pFile);
 
-	LogInfoIn("open %s ok", strFilePath.c_str());
+	LogInfoIn("open %s ok section %d", strFilePath.c_str(), mapData.size());
 	return true;
 }
 
@@ -400,6 +498,10 @@ bool CUpdateMgr::LoadGUIIni(std::string strFilePath, std::map<std::string, std::
 // ==============================================================================
 bool CUpdateMgr::Save3DMotionIni(std::string strFilePath, const std::map<__int64, std::string> &mapData)
 {
+	if (mapData.empty()) {
+		return true;
+	}
+
 	MyMakeSureDirectoryPathExists(strFilePath);
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -432,7 +534,7 @@ bool CUpdateMgr::Save3DMotionIni(std::string strFilePath, const std::map<__int64
 	}
 
 	fclose(pFile);
-	LogInfoIn("***** save %s ok", strFilePath.c_str());
+	LogInfoIn("***** save %s ok section %d", strFilePath.c_str(), mapData.size());
 	return true;
 }
 
@@ -440,6 +542,10 @@ bool CUpdateMgr::Save3DMotionIni(std::string strFilePath, const std::map<__int64
 // ==============================================================================
 bool CUpdateMgr::SaveGUIIni(std::string strFilePath, const std::map<std::string, std::vector<std::string> > &mapData)
 {
+	if (mapData.empty()) {
+		return true;
+	}
+
 	MyMakeSureDirectoryPathExists(strFilePath);
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -484,7 +590,7 @@ bool CUpdateMgr::SaveGUIIni(std::string strFilePath, const std::map<std::string,
 	}
 
 	fclose(pFile);
-	LogInfoIn("***** save %s", strFilePath.c_str());
+	LogInfoIn("***** save %s section %d", strFilePath.c_str(), mapData.size());
 	return true;
 }
 
