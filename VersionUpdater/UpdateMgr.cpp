@@ -545,6 +545,29 @@ bool CUpdateMgr::SaveGUIIni(std::string strFilePath, const std::map<std::string,
 		std::vector<std::string>::const_iterator itValue = rVecValue.begin();
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+		if (itValue != rVecValue.end()) {
+
+			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			std::string strFirst = *itValue;
+			//~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+			std::string::size_type posStr = strFirst.find(COMMENT_PREFIX);
+			if (posStr != std::string::npos) {
+
+				//~~~~~~~~~~~~~~~~~~~~~~~~~~
+				std::string strComment = "//";
+				//~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+				strComment += strFirst.substr(posStr + strlen(COMMENT_PREFIX));
+				while (strComment.find("///") != std::string::npos) {
+					ReplaceStdString(strComment, "///", "//");
+				}
+
+				fprintf(pFile, "%s\n", strComment.c_str());
+				++itValue;
+			}
+		}
+
 		fprintf(pFile, "[%s]\n", itSection->first.c_str());
 		for (; itValue != rVecValue.end(); ++itValue) {
 
@@ -554,10 +577,7 @@ bool CUpdateMgr::SaveGUIIni(std::string strFilePath, const std::map<std::string,
 
 			std::string::size_type posStr = strValue.find(COMMENT_PREFIX);
 			if (posStr != std::string::npos) {
-				while (strValue.find("=/") != std::string::npos || strValue.find("= ") != std::string::npos) {
-					ReplaceStdString(strValue, "=/", "=");
-					ReplaceStdString(strValue, "= ", "=");
-				}
+				continue;
 			}
 
 			fprintf(pFile, "%s\n", strValue.c_str());
