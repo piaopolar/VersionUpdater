@@ -463,7 +463,9 @@ bool CUpdateMgr::LoadGUIIni(std::string strFilePath, std::map<std::string, std::
 		}
 	}
 
-	mapData[strKey] = vecSection;
+	if (!strKey.empty()) {
+		mapData[strKey] = vecSection;
+	}
 
 	fclose(pFile);
 
